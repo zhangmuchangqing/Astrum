@@ -11,7 +11,7 @@
 
   root.ASTRUM_DAILY = {
     "updated": "2026-11-22",
-    "generatedAt": "2026-11-22T12:11:51.119Z",
+    "generatedAt": "2026-11-22T12:12:07.671Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
       {
@@ -217,7 +217,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.25803",
@@ -240,7 +240,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26025",
@@ -261,7 +261,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26372",
@@ -282,7 +282,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26416",
@@ -305,7 +305,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26421",
@@ -327,7 +327,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26424",
@@ -350,7 +350,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26461",
@@ -373,7 +373,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26468",
@@ -396,7 +396,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26483",
@@ -419,7 +419,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26488",
@@ -442,7 +442,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26494",
@@ -465,7 +465,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26495",
@@ -487,7 +487,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26548",
@@ -510,7 +510,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26550",
@@ -533,7 +533,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26576",
@@ -556,7 +556,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26593",
@@ -579,7 +579,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26594",
@@ -601,7 +601,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26618",
@@ -624,7 +624,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26620",
@@ -647,7 +647,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.24581",
@@ -5753,7 +5753,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "A giant star swallowed another star. James Webb reveals the aftermath",
@@ -5765,7 +5765,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "After 8 years in space, a groundbreaking X-ray telescope finally opens its eyes",
@@ -5777,7 +5777,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "NASA's powerful Moon rocket engine roars through a dramatic 200-second test",
@@ -5789,7 +5789,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "NASA’s Voyager 1 is now so far away that light takes 24 hours to reach it",
@@ -5801,7 +5801,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "Two massive stars may be secretly feeding the Milky Way’s supermassive black hole",
@@ -5813,7 +5813,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "Scientists turn Moon dust into LEGO-like bricks for future lunar bases",
@@ -5825,7 +5825,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "NASA pushes Mars helicopter blades beyond the speed of sound",
@@ -5837,7 +5837,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-19",
-        "fetchedAt": "2026-11-22T07:50:20.734Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "A mysterious twist in the universe’s oldest light could reveal new physics",
@@ -6404,10 +6404,10 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-22T12:11:51.119Z",
-      "lastSuccessAt": "2026-11-22T07:50:20.734Z",
+      "lastAttemptAt": "2026-11-22T12:12:07.671Z",
+      "lastSuccessAt": "2026-11-22T12:12:07.671Z",
       "newPapers": 0,
-      "updatedPapers": 0,
+      "updatedPapers": 20,
       "newNews": 0,
       "totalPapers": 252,
       "totalNews": 52,
@@ -6429,9 +6429,9 @@
           "msg": "HTTP 404 https://www.esa.int/rssfeed/Our_Activities/Space_Science"
         }
       ],
-      "ok": null,
-      "partial": null,
-      "status": "running"
+      "ok": true,
+      "partial": true,
+      "status": "partial"
     }
   };
 })(typeof window !== 'undefined' ? window : this);
