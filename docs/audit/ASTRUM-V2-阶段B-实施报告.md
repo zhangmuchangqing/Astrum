@@ -159,7 +159,8 @@
 | `core/tool-gateway.js` | 向工具透传 executionId/idempotencyKey |
 | `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验 |
 | `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested` |
-| `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露 |
+| `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露；R-01/R-02：`evidence.search`/`paper.search`/`llm.compose` 改 `abortable:true`，检索链路透传 `runtime.signal`，取消/暂停映射 `pendingAbort + pause + abortCode` |
+| `core/sources.js` | R-01/R-02：`searchMany → callEndpoint → withRetry → fetchJSON → fetch` 全链路贯穿 signal；取消后不再发起请求、不重试、不计入熔断 |
 | `tools/fake-idb.js` | 模拟真实 IndexedDB readwrite 串行隔离 |
 | `tools/p4-idempotency-test.js` | 适配只读工具 `sideEffect:false`，未知凭证失败改为人工确认 |
 | `tools/v2-recovery-idempotency-test.js` | 适配 confirm 语义并新增副作用用例 |
@@ -169,6 +170,7 @@
 | `tools/v2-multi-tab-concurrency-test.js` | 新增：并发写、事件并写、事务中断、历史兼容 |
 | `tools/v2-b-joint-test.js` | 新增：跨模块联合测试 |
 | `tools/v2-external-call-recovery-test.js` | 新增：外部调用 executionId/idempotencyKey、回执持久化、远端成功/失败/未知恢复 |
+| `tools/v2-abortable-tools-test.js` | 新增（R-01/R-02）：signal 贯穿 fetch、预取消零请求、在飞取消、暂停/取消语义、全文链路、compose 预取消 |
 
 ## 四、接口与兼容性
 

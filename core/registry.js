@@ -98,8 +98,9 @@
       cost: { ms: 2500, tokens: 0, searches: 1 },
       permissions: { canProduceNumbers: false },
       idempotent: false, ttlMs: 0, retry: { allowed: false, max: 0 }, deps: ['research', 'sources'],
-      /* 只读检索：可安全重跑；Sources.searchMany 当前不接收 signal。 */
-      abortable: false, sideEffect: false,
+      /* 只读检索：signal 已贯穿 Sources.searchMany → callEndpoint → fetchJSON；
+       * 取消后不再发起新请求，故可真正中止（R-01/R-02）。 */
+      abortable: true, sideEffect: false,
       run: runEvidenceSearch
     },
     {
@@ -128,8 +129,8 @@
       cost: { ms: 3000, tokens: 0, searches: 1 },
       permissions: { canProduceNumbers: false },
       idempotent: false, ttlMs: 0, retry: { allowed: false, max: 0 }, deps: ['sources'],
-      /* 检索阶段不接收 signal；全文获取只在 internal 步骤内单独传递。 */
-      abortable: false, sideEffect: false,
+      /* 检索 signal 已贯穿至 Sources.searchMany；全文子步骤也传递 runtime.signal。 */
+      abortable: true, sideEffect: false,
       run: runPaperSearch
     },
     {
@@ -139,8 +140,9 @@
       cost: { ms: 3000, tokens: 1200, searches: 0 },
       permissions: { canProduceNumbers: false },
       idempotent: false, ttlMs: 0, retry: { allowed: false, max: 0 }, deps: ['sources'],
-      /* compose 适配器当前不接收 signal；重跑只消耗额度，无不可逆副作用。 */
-      abortable: false, sideEffect: false,
+      /* 本地同步合成：入口与合作点检查 signal，取消后不产出被废弃答案；
+       * 内部同步计算无法逐指令中断，故仅声明合作式中止。 */
+      abortable: true, sideEffect: false,
       run: runCompose
     },
     {
@@ -311,6 +313,38 @@
     return { ok: true, targets: hits, names: hits.map(function (h) { return toolName(h.item); }) };
   }
 
+  /* V2-B R-01/R-02：区分「用户取消/暂停」与「网络错误」。
+   * 终止类错误必须以 pendingAbort 返回，让编排层保留真实取消语义，
+   * 不能被误判成可重试的 network 错误。 */
+  function isAbortError(e) {
+    return !!(e && (e.name === 'AbortError' || (e.cls && e.cls.kind === 'cancelled')));
+  }
+  function abortReasonOf(signal) {
+    var r = signal && signal.reason;
+    if (r === 'pause' || (r && r.code === 'PAUSE_REQUESTED')) return 'pause';
+    if (r === 'user' || r === 'cancel' || (r && r.code === 'USER_CANCELLED')) return 'user_cancelled';
+    return 'cancelled';
+  }
+  function abortedError(signal) {
+    var reason = abortReasonOf(signal);
+    var e = new Error(reason);
+    e.name = 'AbortError';
+    e.cls = { kind: 'cancelled', msg: reason, retryable: false };
+    e.reason = reason;
+    e.pause = reason === 'pause';
+    e.abortCode = reason === 'pause' ? 'PAUSE_REQUESTED'
+      : (reason === 'user_cancelled' ? 'USER_CANCELLED' : 'TOOL_ABORTED');
+    return e;
+  }
+  function abortedResult(e) {
+    var reason = (e && e.reason) || 'cancelled';
+    return {
+      ok: false, reason: reason, kind: e && e.pause ? 'pause' : 'cancelled',
+      retriable: false, pendingAbort: true, pause: !!(e && e.pause),
+      abortCode: e && e.abortCode || null
+    };
+  }
+
   function offlineResult(spec, args) {
     return {
       ok: true, items: [], evidenceIds: [], empty: true, network: 'disabled',
@@ -410,7 +444,11 @@
     }
     var query = String(args && args.query || '').trim();
     if (!query) return { ok: false, reason: 'empty_query', kind: 'args_invalid', retriable: false };
-    return root.Sources.searchMany([query], { types: ['paper'], maxCalls: 2, budgetMs: 10000, internal: true })
+    var signal = runtime && runtime.signal || null;
+    if (signal && signal.aborted) return abortedResult(abortedError(signal));
+    return root.Sources.searchMany([query], {
+      types: ['paper'], maxCalls: 2, budgetMs: 10000, internal: true, signal: signal
+    })
       .then(function (res) {
         var out = searchResult(spec, args, res, '');
         if (args.fulltext !== true || !out.items.length) return out;
@@ -423,6 +461,7 @@
         var items = out.items.slice(0, tries);
         var fulltexts = [], errors = [];
         function tryAt(i) {
+          if (signal && signal.aborted) throw abortedError(signal);
           if (i >= items.length) {
             out.fulltexts = fulltexts;
             out.fulltextErrors = errors;
@@ -445,6 +484,7 @@
         return tryAt(0);
       })
       .catch(function (e) {
+        if (isAbortError(e)) return abortedResult(signal && signal.aborted ? abortedError(signal) : e);
         return { ok: false, reason: e && e.message ? e.message : String(e), kind: 'network', retriable: true };
       });
   }
@@ -456,20 +496,30 @@
     }
     var query = String(args && args.query || '').trim();
     if (!query) return { ok: false, reason: 'empty_query', kind: 'args_invalid', retriable: false };
+    var signal = runtime && runtime.signal || null;
+    if (signal && signal.aborted) return abortedResult(abortedError(signal));
     return root.Sources.searchMany([query], {
-      types: ['paper', 'encyclopedia', 'database'], maxCalls: 3, budgetMs: 10000, internal: true
+      types: ['paper', 'encyclopedia', 'database'], maxCalls: 3, budgetMs: 10000, internal: true, signal: signal
     }).then(function (res) {
       return searchResult(spec, args, res, args.direction || '');
     }).catch(function (e) {
+      /* 外部 signal 已中止时以 signal.reason 还原 pause / user_cancelled；
+       * 底层 AbortError 本身不携带暂停语义。 */
+      if (isAbortError(e)) return abortedResult(signal && signal.aborted ? abortedError(signal) : e);
       return { ok: false, reason: e && e.message ? e.message : String(e), kind: 'network', retriable: true };
     });
   }
 
-  function runCompose(args, ctx, spec, cfg, depResults) {
+  function runCompose(args, ctx, spec, cfg, depResults, runtime) {
+    var signal = runtime && runtime.signal || null;
+    /* compose 适配器是本地同步计算，无法在内部中断；至少在入口与合作点检查
+     * signal，取消后不启动/不返回结果，避免停止等待后仍产出被废弃的答案。 */
+    if (signal && signal.aborted) return abortedResult(abortedError(signal));
     if (!adapterRef || !adapterRef.compose) {
       return { ok: false, reason: 'compose_adapter_missing', retriable: false };
     }
     var r = adapterRef.compose(args, ctx, cfg, depResults);
+    if (signal && signal.aborted) return abortedResult(abortedError(signal));
     return r;
   }
 

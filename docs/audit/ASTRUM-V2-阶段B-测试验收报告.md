@@ -59,8 +59,9 @@
 | `tools/v2-multi-tab-concurrency-test.js` | 单写、并发同修订恰一成功、首次并发、并发事件追加、冲突后重读重放、不同任务并发、不同 Profile 隔离、事务中断无部分写、DB 版本、历史无 revision、导入旧格式、updatedAt 兜底 | **17/17 PASS** |
 | `tools/v2-b-joint-test.js` | 超时+暂停、暂停+多标签、恢复+幂等、取消+持久化失败、运行中暂停两阶段 | **12/12 PASS** |
 | `tools/v2-external-call-recovery-test.js` | executionId 唯一、idempotencyKey 跨重试稳定、回执持久化、非幂等外部调用成功复用/失败重跑/未知确认、UNKNOWN 外部回执校验、直接 decide 不绕过 | **12/12 PASS** |
+| `tools/v2-abortable-tools-test.js` | R-01/R-02：工具 abortable 声明、signal 贯穿 fetch、预取消零请求、在飞取消中止 fetch、取消不重试、取消不计入熔断、暂停/用户取消语义、paper 全文 signal、compose 预取消 | **13/13 PASS** |
 
-新增合计：**95/95 PASS**。
+新增合计：**108/108 PASS**。
 
 ### 2.4 既有 V2/P3/P4 专项套件
 
@@ -118,7 +119,41 @@
 |---|---:|---:|---:|---:|
 | 阶段 A 必跑基线 | 157 + 38 + 53 + 13 + 52 + 31 + 24 + 16 + 36 | 0 | 0 | 0 |
 | 全量非浏览器套件 | 114 个套件 | 0 | 3 | 0 |
-| 新增独立测试 | 95 | 0 | 0 | 0 |
+| 新增独立测试 | 108 | 0 | 0 | 0 |
 | 既有 V2/P3/P4 专项 | 102 | 0 | 0 | 0 |
 
 > 注：不同套件断言数不可简单相加；“既有专项 102”为 17+14+18+11+8+34。
+
+## 八、R-01 / R-02 修复后的追加验证（2026-11-23）
+
+修复内容：`core/sources.js` 的检索链路全链路贯穿 signal；`core/registry.js` 将 `evidence.search`、`paper.search`、`llm.compose` 改为 `abortable:true` 并传递 `runtime.signal`；取消/暂停映射为 `pendingAbort + pause + abortCode`，取消不再计入端点熔断。
+
+本次实跑结果：
+
+| 套件 | 结果 |
+|---|---|
+| `tools/v2-abortable-tools-test.js`（新增） | **13/13 PASS** |
+| `tools/v2-timeout-abort-test.js` | **17/17 PASS** |
+| `tools/v2-task-pause-resume-test.js` | **21/21 PASS** |
+| `tools/v2-recovery-idempotency-test.js` | **11/11 PASS** |
+| `tools/v2-idempotency-recovery-test.js` | **16/16 PASS** |
+| `tools/v2-multi-tab-concurrency-test.js` | **17/17 PASS** |
+| `tools/v2-external-call-recovery-test.js` | **12/12 PASS** |
+| `tools/v2-b-joint-test.js` | **12/12 PASS** |
+| `tools/p4-idempotency-test.js` | **18/18 PASS** |
+| `tools/p0-security-test.js` | **38/38 PASS** |
+| `tools/p0-03-test.js` | **53/53 PASS** |
+| `tools/p4-browser-test.js` | **13/13 PASS** |
+| `tools/p3-integration-test.js` | **9/9 PASS** |
+| `tools/control-test.js` | **86/86 PASS** |
+| `tools/research-test.js` | **77/77 PASS（离线 mock）** |
+| `tools/b8-test.js` | **33/33 PASS** |
+| `tools/p1-resume-test.js` | **42/42 PASS** |
+| `tools/v2-sky-01-test.js` | **52/52 PASS** |
+| `tools/v2-sky-2b-test.js` | **31/31 PASS** |
+| `tools/v2-sky-2c-test.js` | **24/24 PASS** |
+| `tools/visual-stars-test.js` | **16/16 PASS** |
+| `tools/visual-stars-quality-test.js` | **36/36 PASS** |
+| `tools/selftest.js` | **156/157**，1 条失败为 `ip locate chain works`：本机直连 `ipwho.is` 失败（网络层拒绝），与本次改动无关；其余 156 条通过 |
+
+结论：R-01/R-02 中「网络检索与合成链路可中断」部分已闭环；`kepler.*`、`kb.lookup`、`fits.parse`、`compare.curate`、`compose.*` 等本地同步计算仍为固有边界，已在剩余风险清单中保留说明。

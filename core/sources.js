@@ -1409,8 +1409,10 @@
     return e;
   }
 
-  function fetchJSON(url, ms) {
-    var timer = withTimeout(ms || 7000);
+  /* externalSignal 可选：V2-B R-01/R-02 —— 检索类工具的暂停/超时必须能真正
+   * 中止底层 fetch，否则只能停止等待、请求继续消耗配额。 */
+  function fetchJSON(url, ms, externalSignal) {
+    var timer = withTimeout(ms || 7000, externalSignal);
     return fetch(url, {
       signal: timer.signal, cache: 'no-store',
       headers: { Accept: 'application/json', 'Accept-Language': 'zh-CN,zh;q=0.9' }
@@ -1528,10 +1530,10 @@
   }
 
   /* NASA 图像与视频库：天文专用，ACAO: * */
-  function nasaSearch(q) {
+  function nasaSearch(q, signal) {
     var eq = enQueryFor(q);
     var u = 'https://images-api.nasa.gov/search?q=' + encodeURIComponent(eq) + '&media_type=image';
-    return fetchJSON(u, 7000).then(function (d) {
+    return fetchJSON(u, 7000, signal).then(function (d) {
       var arr = (d.collection && d.collection.items) || [];
       return arr.slice(0, 3).map(function (it) {
         var md = (it.data && it.data[0]) || {};
@@ -1556,11 +1558,11 @@
   }
 
   /* OpenAlex：学术文献，ACAO: * */
-  function openAlex(q) {
+  function openAlex(q, signal) {
     var u = 'https://api.openalex.org/works?search=' + encodeURIComponent(enQueryFor(q)) +
       '&per-page=3&mailto=astrum@users.noreply.github.com';
     /* 相关度排序的默认行为即可；最新发现类问题由上层按 date 再排 */
-    return fetchJSON(u, 8000).then(function (d) {
+    return fetchJSON(u, 8000, signal).then(function (d) {
       return (d.results || []).slice(0, 3).map(function (w) {
         var abs = invAbstract(w.abstract_inverted_index);
         var authors = ((w.authorships || []).map(function (a) {
@@ -1595,11 +1597,11 @@
   }
 
   /* Semantic Scholar：学术文献检索，ACAO: * */
-  function semanticScholar(q) {
+  function semanticScholar(q, signal) {
     var eq = enQueryFor(q);
     var u = 'https://api.semanticscholar.org/graph/v1/paper/search?query=' +
       encodeURIComponent(eq) + '&limit=3&fields=title,abstract,year,externalIds,url,authors,publicationDate,openAccessPdf';
-    return fetchJSON(u, 8000).catch(function (e) {
+    return fetchJSON(u, 8000, signal).catch(function (e) {
       if (e && e.status === 429) {
         /* 匿名调用共享限流池，过载属常态：明确说明并让降级链继续尝试其它端点 */
         var err = new Error('HTTP 429 触发限流（匿名调用共享配额，稍后重试）');
@@ -1654,7 +1656,7 @@
       return i === 0 ? String(n) : ('0' + n).slice(-2);
     }).join('-');
   }
-  function crossrefSearch(q) {
+  function crossrefSearch(q, signal) {
     var eq = enQueryFor(q);
     /* 中文查询不发给 Crossref：它只认英文题名/摘要，硬查会返回无关条目。 */
     if (!/^[\x00-\x7F]+$/.test(eq)) return Promise.resolve([]);
@@ -1665,7 +1667,7 @@
      * 只保留天文学/物理学期刊与会议论文，避免把“看起来像论文”的内容当科研证据。 */
     var VENUE_OK = /(astronom|astrophys|monthly notices|mnras|physical review|nature|science|a&a|jcap|universe|galaxies|physics reports|journal of cosmology|cosmology and astroparticle|classical and quantum gravity|proceedings of the|aip conference|iau symposium)/i;
     var VENUE_BAD = /(physics world|europhysics news|accessscience|osf|preprint|news|magazine|press release)/i;
-    return fetchJSON(u, 8000).then(function (d) {
+    return fetchJSON(u, 8000, signal).then(function (d) {
       var items = (d && d.message && d.message.items) || [];
       return items.map(function (it) {
         var type = String(it.type || '').toLowerCase();
@@ -1708,10 +1710,10 @@
 
   /* 维基百科 Core REST（CORS 回显 origin；部分地区不可达）
    * 超时设 5s：该域名在部分网络下完全不通，过长会拖垮整轮检索预算。 */
-  function wikiCore(q) {
+  function wikiCore(q, signal) {
     var u = 'https://api.wikimedia.org/core/v1/wikipedia/zh/search/page?q=' +
       encodeURIComponent(q) + '&limit=3';
-    return fetchJSON(u, 5000).then(function (d) {
+    return fetchJSON(u, 5000, signal).then(function (d) {
       return (d.pages || []).slice(0, 3).map(function (pg) {
         var o = blankItem();
         o.title = pg.title;
@@ -1728,10 +1730,10 @@
   }
 
   /* MediaWiki Action API（部分地区不可达；返回 timestamp，可作时效依据） */
-  function wikiAction(q) {
+  function wikiAction(q, signal) {
     var u = 'https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=' +
       encodeURIComponent(q) + '&srlimit=3&format=json&origin=*';
-    return fetchJSON(u, 5000).then(function (d) {
+    return fetchJSON(u, 5000, signal).then(function (d) {
       var arr = (d.query && d.query.search) || [];
       return arr.slice(0, 3).map(function (it) {
         var o = blankItem();
@@ -1840,21 +1842,50 @@
 
   /* 重试包装。
    * 关键修复：args 必须透传给 fn —— 之前 withRetry(ep.fn, 2) 直接 fn()，
-   * 查询词在链路中丢失，导致所有检索实际都在搜同一个无关词。 */
-  function withRetry(fn, tries, args) {
+   * 查询词在链路中丢失，导致所有检索实际都在搜同一个无关词。
+   * V2-B R-01/R-02：新增 signal 透传；重试等待期也响应中止，避免暂停/超时后
+   * 仍在定时器里继续发起下一次请求。 */
+  function withRetry(fn, tries, args, signal) {
     var n = tries || 2;
     var a = args || [];
     function attempt(k) {
+      if (signal && signal.aborted) {
+        var ae = new Error('cancelled');
+        ae.name = 'AbortError';
+        ae.cls = { kind: 'cancelled', msg: '已取消', retryable: false };
+        throw ae;
+      }
       var t0 = Date.now();
       return fn.apply(null, a).then(function (items) {
         return { items: items || [], ms: Date.now() - t0 };
       }).catch(function (e) {
+        /* 外部 signal 中止优先于错误分类：fetch 的 AbortError 会被 classifyError
+         * 归类为 timeout（可重试），但取消不应重试，必须作为 cancelled 终止。 */
+        if (signal && signal.aborted) {
+          var cancelErr = new Error('cancelled');
+          cancelErr.name = 'AbortError';
+          cancelErr.cls = { kind: 'cancelled', msg: '已取消', retryable: false };
+          throw cancelErr;
+        }
         var cls = classifyError(e);
         /* 超时不重试：端点超时通常说明本网络到该域名不通，重试只会再耗一个超时周期
          * （原先 wiki 端点 7s 超时 + 重试 = 14s，直接吃掉整个检索预算）。 */
         if (k < n && cls.retryable && cls.kind !== 'timeout') {
-          return new Promise(function (res) {
-            setTimeout(res, k === 1 ? 300 : 900);
+          return new Promise(function (res, rej) {
+            var waitTimer = setTimeout(done, k === 1 ? 300 : 900);
+            var onAbort = function () { clearTimeout(waitTimer); done(); };
+            function done() {
+              if (signal && signal.removeEventListener) signal.removeEventListener('abort', onAbort);
+              if (signal && signal.aborted) {
+                var ae = new Error('cancelled');
+                ae.name = 'AbortError';
+                ae.cls = { kind: 'cancelled', msg: '已取消', retryable: false };
+                rej(ae);
+              } else {
+                res();
+              }
+            }
+            if (signal && signal.addEventListener) signal.addEventListener('abort', onAbort);
           }).then(function () { return attempt(k + 1); });
         }
         var err = new Error(cls.msg);
@@ -1866,13 +1897,13 @@
   }
 
   /* 单端点单查询：返回 { ok, items, ms } 或抛错（已是分类后的错误） */
-  function callEndpoint(ep, q) {
+  function callEndpoint(ep, q, signal) {
     if (cooling(ep.id)) {
       var ce = new Error('熔断冷却中');
       ce.cls = { kind: 'cooling', msg: '熔断冷却中' };
       return Promise.reject(ce);
     }
-    return withRetry(ep.fn, 2, [q]).then(function (r) {
+    return withRetry(ep.fn, 2, [q, signal], signal).then(function (r) {
       if (!r.items.length) {
         /* 空结果是「这个查询没命中」，不是端点宕机；不能让它累计到熔断。
          * 否则用户连续问几个不同问题时，Crossref/OpenAlex 会被误判为不可用。 */
@@ -1899,7 +1930,8 @@
       return { ok: true, items: r.items, ms: r.ms, endpoint: ep.id, name: ep.name };
     }).catch(function (err) {
       var cls = err.cls || classifyError(err);
-      healthFail(ep.id, cls, 0);
+      /* 用户取消/暂停不属于端点故障，不得累计 failures 触发熔断。 */
+      if (cls.kind !== 'cancelled') healthFail(ep.id, cls, 0);
       var e2 = new Error(cls.msg);
       e2.cls = cls;
       e2.endpoint = ep.id;
@@ -1972,6 +2004,9 @@
     var wantTypes = opts.types && opts.types.length ? opts.types : null;
     var maxCalls = opts.maxCalls || 12;
     var budgetMs = opts.budgetMs || 9000;
+    /* V2-B R-01/R-02：外部 signal（编排步骤的 attemptSignal）贯穿到每个
+     * 端点的 fetch；中止后不再发起新请求，避免暂停/超时后仍消耗配额。 */
+    var signal = opts.signal || null;
     var t0 = Date.now();
 
     /* 只用与所需类型匹配的端点；同类型内按 priority 取前面的 */
@@ -1992,6 +2027,7 @@
     var tasks = eps.map(function (ep) {
       return qs.reduce(function (chain, q) {
         return chain.then(function () {
+          if (signal && signal.aborted) return;
           if (calls >= maxCalls) { truncated = true; return; }
           if (Date.now() - t0 > budgetMs) { truncated = true; return; }
           if (cooling(ep.id)) {
@@ -2006,11 +2042,19 @@
             return;
           }
           calls++;
-          return callEndpoint(ep, q).then(function (r) {
+          return callEndpoint(ep, q, signal).then(function (r) {
             /* 缓存：按「端点 + 查询」为键，避免多源互相污染 */
             cachePut(ck, r.items, r.name);
             items = items.concat(r.items);
           }).catch(function (e) {
+            /* 中止导致的失败要透出 cancelled，供上层恢复逻辑正确分类；
+             * 不要混入普通网络错误，也不要计入熔断冷却。 */
+            if ((e && e.name === 'AbortError') || (e && e.cls && e.cls.kind === 'cancelled')) {
+              var ae = new Error('cancelled');
+              ae.name = 'AbortError';
+              ae.cls = { kind: 'cancelled', msg: '已取消', retryable: false };
+              throw ae;
+            }
             errors.push({ endpoint: ep.id, name: ep.name, query: q, kind: (e.cls && e.cls.kind) || 'unknown', msg: e.message });
           });
         });
@@ -2018,6 +2062,12 @@
     });
 
     return Promise.all(tasks).then(function () {
+      if (signal && signal.aborted) {
+        var ce = new Error('cancelled');
+        ce.name = 'AbortError';
+        ce.cls = { kind: 'cancelled', msg: '已取消', retryable: false };
+        throw ce;
+      }
       setStatus('web', items.length ? 'ready' : 'error',
         items.length ? '在线 · ' + eps.map(function (e) { return e.name; }).join('/') : '全部端点不可用');
       return {

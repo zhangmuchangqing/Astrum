@@ -4,18 +4,20 @@
 
 ## R-01 不接收 AbortSignal 的工具仍可能在超时后继续执行
 
-- 事实：`evidence.search`、`paper.search`、`llm.compose`、`kepler.*`、`kb.lookup`、`fits.parse`、`compare.curate`、`compose.*` 均为 `abortable:false`。
-- 影响：超时/取消只能停止等待，底层同步计算或未接收 signal 的检索可能继续，直到自然结束或由浏览器/网络层终止；可能继续消耗配额。
-- 已做：记录 `ABORT_UNSUPPORTED`，`abortConfirmed=false`；暂停时等待安全边界；依赖步骤不启动。
-- 未做：给 `Sources.searchMany`、compose adapter、paper 全文链路补齐 signal 贯穿。
-- 责任边界：这是工具契约限制，不是编排层可伪造解决的问题。
+- 状态：**网络检索/合成链路已修复（2026-11-23 补充）**；本地同步计算仍为固有边界。
+- 已修复：`Sources.searchMany → callEndpoint → withRetry → fetchJSON → fetch` 已全链路贯穿外部 `signal`；`fetchJSON` 用 `withTimeout(ms, externalSignal)` 组合外部取消与端点超时；重试等待期响应 abort，取消后不再发起下一次请求。
+- 已修复：`evidence.search`、`paper.search`、`llm.compose` 由 `abortable:false` 改为 `abortable:true`；`llm.compose` 在入口与合作点检查 signal，取消后不产出被废弃答案。
+- 已修复：取消/暂停错误不再累计端点熔断失败，避免被误判为可重试网络错误。
+- 残留：`kepler.*`、`kb.lookup`、`fits.parse`、`compare.curate`、`compose.*` 仍是本地同步计算，无法逐指令中断；其耗时为毫秒级并受 `timeoutMs` 约束，超时仍记录 `ABORT_UNSUPPORTED`、`abortConfirmed=false`。
+- 责任边界：同步计算的中断能力受 JS 执行模型限制，不是编排层可伪造解决的问题。
 
 ## R-02 暂停不可中断工具可能长时间等待
 
-- 事实：`abortable:false` 工具在暂停时不会立即回队，`runPlan` 会等待其自然完成。
-- 影响：用户看到 `PAUSE_REQUESTED` 后，可能长时间不进入 `PAUSED`；若工具永不返回，只能等 `timeoutMs` 硬超时。
-- 已做：UI 返回明确提示“将在安全边界后暂停”；不提前写 `pausedAt`。
-- 未做：无强制终止同步计算/第三方请求的能力。
+- 状态：**网络工具已修复（2026-11-23 补充）**；本地同步计算仍为固有边界。
+- 已修复：检索类工具现在真正接收 signal，暂停会中止底层 fetch 并把在飞步骤回队，无需等待请求自然结束。
+- 已验证：暂停时 `evidence.search` 返回 `pendingAbort=true / pause=true / abortCode=PAUSE_REQUESTED`；预取消不发起任何网络请求；在飞取消后底层 fetch 的 signal 处于 `aborted` 且不再重试。
+- 残留：本地同步计算工具（`kepler.*`、`kb.lookup`、`fits.parse`、`compare.curate`、`compose.*`）在暂停时仍需等待其同步执行结束（通常为毫秒级，且阻塞事件循环期间暂停请求本身也无法被处理）；若出现异常长计算，只能等 `timeoutMs` 硬超时。
+- 已做：UI 仍返回“将在安全边界后暂停”，不提前写 `pausedAt`，不伪造 PAUSED。
 
 ## R-03 恢复人工确认只有状态，没有完整审批动作
 

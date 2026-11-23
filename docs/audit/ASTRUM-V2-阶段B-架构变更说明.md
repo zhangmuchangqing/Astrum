@@ -24,6 +24,7 @@ AstroControl.run / resume
 - **步骤级控制器**由 `withTimeout` 创建，超时只中止当前步骤；步骤完成会清理定时器与任务级监听器。
 - **不合并成一个不可追溯的 AbortSignal**：取消来源通过 `signal.reason` 与结果中的 `abortCode` 保留。
 - **不伪造取消**：工具不支持信号时记录 `abortSupported=false`，超时标记 `ABORT_UNSUPPORTED`；暂停/用户取消时等待其自然到达安全边界。
+- **网络链路真实贯穿（R-01/R-02 修复）**：`rt.signal` 现在到达 `Sources.searchMany(queries, { signal }) → callEndpoint(ep, q, signal) → withRetry(fn, 2, [q, signal], signal) → fetchJSON(url, ms, signal) → fetch({ signal })`；`fetchJSON` 用 `withTimeout(ms, externalSignal)` 把端点超时与外部取消组合进同一个 fetch 信号。取消后不再发起新请求，重试等待期也会响应 abort，且取消不计入端点熔断失败。
 
 取消来源与稳定码：
 
@@ -43,10 +44,10 @@ AstroControl.run / resume
 | `kepler.ephemeris` | false | false | 本地同步计算 |
 | `kepler.visibility` | false | false | 本地同步计算 |
 | `kb.lookup` | false | false | 本地知识/星表 |
-| `evidence.search` | false | false | `Sources.searchMany` 未接收 signal |
+| `evidence.search` | true | false | signal 已贯穿 `Sources.searchMany` → `fetch`；取消后不再发起请求 |
 | `simbad.tap` | true | false | `Simbad.lookup` 显式接收 signal |
-| `paper.search` | false | false | 检索阶段未接收 signal |
-| `llm.compose` | false | false | 适配器未接收 signal；无不可逆外部写 |
+| `paper.search` | true | false | 检索与全文子步骤均接收 signal |
+| `llm.compose` | true | false | 入口与合作点检查 signal；本地同步合成无外部写 |
 | `fits.parse` | false | false | 本地解析 |
 | `compare.curate` | false | false | 本地整理 |
 | `compose.target/domain/simple` | false | false | 本地组装 |
