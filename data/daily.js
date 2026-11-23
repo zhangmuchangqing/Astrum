@@ -10,8 +10,8 @@
   'use strict';
 
   root.ASTRUM_DAILY = {
-    "updated": "2026-11-21",
-    "generatedAt": "2026-11-21T11:58:15.110Z",
+    "updated": "2026-11-22",
+    "generatedAt": "2026-11-22T12:12:07.671Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
       {
@@ -217,7 +217,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.25803",
@@ -240,7 +240,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26025",
@@ -261,7 +261,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26372",
@@ -282,7 +282,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26416",
@@ -305,7 +305,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26421",
@@ -327,7 +327,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26424",
@@ -350,7 +350,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26461",
@@ -373,7 +373,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26468",
@@ -396,7 +396,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26483",
@@ -419,7 +419,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26488",
@@ -442,7 +442,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26494",
@@ -465,7 +465,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26495",
@@ -487,7 +487,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26548",
@@ -510,7 +510,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26550",
@@ -533,7 +533,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26576",
@@ -556,7 +556,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26593",
@@ -579,7 +579,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26594",
@@ -601,7 +601,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26618",
@@ -624,7 +624,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.26620",
@@ -647,7 +647,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-20",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "id": "2611.24581",
@@ -5744,16 +5744,28 @@
     ],
     "news": [
       {
-        "title": "NASA’s Voyager 1 is now so far away that light takes 24 hours to reach it",
-        "summary": "NASA’s Voyager 1 has reached an extraordinary milestone, traveling 16.1 billion miles from Earth to become the first spacecraft so distant that its signals take…",
+        "title": "Time may be far stranger than we realize. Scientists have a way to test it",
+        "summary": "Time may be far stranger than we realize, and scientists have proposed a way to detect clocks experiencing multiple flows of time simultaneously. Using atomic c…",
         "source": "ScienceDaily",
         "date": "2026-11-21",
-        "url": "https://www.sciencedaily.com/releases/2026/11/261120075554.htm",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261120075558.htm",
         "sources": [
           "ScienceDaily"
         ],
-        "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "firstSeen": "2026-11-22",
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
+      },
+      {
+        "title": "A giant star swallowed another star. James Webb reveals the aftermath",
+        "summary": "Astronomers have witnessed a spectacular cosmic collision in the Andromeda galaxy, where a small star spiraled into a giant star 18,000 times brighter than the…",
+        "source": "ScienceDaily",
+        "date": "2026-11-21",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261120075556.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-22",
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "After 8 years in space, a groundbreaking X-ray telescope finally opens its eyes",
@@ -5765,7 +5777,31 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
+      },
+      {
+        "title": "NASA's powerful Moon rocket engine roars through a dramatic 200-second test",
+        "summary": "NASA has successfully tested a powerful RS-25 rocket engine, firing it for 200 seconds to gather data that could make future Moon missions safer and more reliab…",
+        "source": "ScienceDaily",
+        "date": "2026-11-20",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261120075551.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-22",
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
+      },
+      {
+        "title": "NASA’s Voyager 1 is now so far away that light takes 24 hours to reach it",
+        "summary": "NASA’s Voyager 1 has reached an extraordinary milestone, traveling 16.1 billion miles from Earth to become the first spacecraft so distant that its signals take…",
+        "source": "ScienceDaily",
+        "date": "2026-11-20",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261120075554.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-21",
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "Two massive stars may be secretly feeding the Milky Way’s supermassive black hole",
@@ -5777,7 +5813,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "Scientists turn Moon dust into LEGO-like bricks for future lunar bases",
@@ -5789,7 +5825,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "NASA pushes Mars helicopter blades beyond the speed of sound",
@@ -5801,7 +5837,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-19",
-        "fetchedAt": "2026-11-21T11:58:15.110Z"
+        "fetchedAt": "2026-11-22T12:12:07.671Z"
       },
       {
         "title": "A mysterious twist in the universe’s oldest light could reveal new physics",
@@ -6368,13 +6404,13 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-21T11:58:15.110Z",
-      "lastSuccessAt": "2026-11-21T11:58:15.110Z",
+      "lastAttemptAt": "2026-11-22T12:12:07.671Z",
+      "lastSuccessAt": "2026-11-22T12:12:07.671Z",
       "newPapers": 0,
       "updatedPapers": 20,
       "newNews": 0,
       "totalPapers": 252,
-      "totalNews": 49,
+      "totalNews": 52,
       "sources": {
         "papers": [
           "astro-ph.GA(8)",
