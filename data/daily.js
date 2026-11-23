@@ -11,7 +11,7 @@
 
   root.ASTRUM_DAILY = {
     "updated": "2026-11-23",
-    "generatedAt": "2026-11-23T13:55:35.594Z",
+    "generatedAt": "2026-11-23T13:55:52.104Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
       {
@@ -35,7 +35,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27069",
@@ -58,7 +58,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27151",
@@ -81,7 +81,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27228",
@@ -104,7 +104,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27249",
@@ -127,7 +127,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27265",
@@ -150,7 +150,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27551",
@@ -173,7 +173,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27589",
@@ -196,7 +196,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27611",
@@ -219,7 +219,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27643",
@@ -242,7 +242,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27680",
@@ -265,7 +265,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27770",
@@ -288,7 +288,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27773",
@@ -311,7 +311,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27836",
@@ -334,7 +334,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27856",
@@ -357,7 +357,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27890",
@@ -380,7 +380,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27898",
@@ -402,7 +402,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27952",
@@ -425,7 +425,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27979",
@@ -448,7 +448,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.27986",
@@ -470,7 +470,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "id": "2611.26008",
@@ -6202,6 +6202,30 @@
     ],
     "news": [
       {
+        "title": "Two monster black holes from the dawn of time defy explanation",
+        "summary": "Astronomers have discovered the oldest known compact pair of quasars, powered by two enormous black holes that existed just 900 million years after the Big Bang…",
+        "source": "ScienceDaily",
+        "date": "2026-11-23",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261122060342.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "title": "A galactic shock wave could rewrite the map of the Milky Way",
+        "summary": "A surprising discovery suggests the Milky Way may be making stars in places where most galaxies cannot. Scientists found evidence that a massive rotating struct…",
+        "source": "ScienceDaily",
+        "date": "2026-11-23",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261122060329.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
         "title": "A mysterious gap hints at black holes born from stars that never exploded",
         "summary": "Massive stars may be quietly collapsing into black holes without ever producing the spectacular supernova explosions scientists typically expect. A surprising p…",
         "source": "ScienceDaily",
@@ -6211,7 +6235,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "Interstellar solar sails hit a bizarre problem at 75% of light speed",
@@ -6235,7 +6259,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "A giant star swallowed another star. James Webb reveals the aftermath",
@@ -6247,7 +6271,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "After 8 years in space, a groundbreaking X-ray telescope finally opens its eyes",
@@ -6259,7 +6283,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "NASA's powerful Moon rocket engine roars through a dramatic 200-second test",
@@ -6271,7 +6295,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "NASA’s Voyager 1 is now so far away that light takes 24 hours to reach it",
@@ -6283,7 +6307,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-23T08:39:50.097Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "Two massive stars may be secretly feeding the Milky Way’s supermassive black hole",
@@ -6886,13 +6910,13 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-23T13:55:35.594Z",
-      "lastSuccessAt": "2026-11-23T08:39:50.097Z",
+      "lastAttemptAt": "2026-11-23T13:55:52.104Z",
+      "lastSuccessAt": "2026-11-23T13:55:52.104Z",
       "newPapers": 0,
-      "updatedPapers": 0,
-      "newNews": 0,
+      "updatedPapers": 20,
+      "newNews": 2,
       "totalPapers": 272,
-      "totalNews": 54,
+      "totalNews": 56,
       "sources": {
         "papers": [
           "astro-ph.GA(8)",
@@ -6911,9 +6935,9 @@
           "msg": "HTTP 404 https://www.esa.int/rssfeed/Our_Activities/Space_Science"
         }
       ],
-      "ok": null,
-      "partial": null,
-      "status": "running"
+      "ok": true,
+      "partial": true,
+      "status": "partial"
     }
   };
 })(typeof window !== 'undefined' ? window : this);
