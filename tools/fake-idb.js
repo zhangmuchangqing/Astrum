@@ -124,6 +124,15 @@ StoreHandle.prototype.getAll = function () {
 StoreHandle.prototype.delete = function (key) {
   var self = this;
   return this._request(function () {
+    /* R-09：检查点裁剪（pruneCheckpoints）只会 delete，从不 put；
+     * 这里提供独立的 delete 故障注入点，可精确命中派生记录清理事务，
+     * 而不干扰权威记录保存的主事务（主事务全是 put）。 */
+    if (self.tx._fake.failDelete) {
+      var err = self.tx._fake.failDelete;
+      self.tx._fake.failDelete = null;
+      self.tx._aborted = true;
+      throw DbError(err.name || 'UnknownError', 'injected delete failure', err.code);
+    }
     delete self.meta.data[keyId(key)];
     return undefined;
   });
@@ -276,6 +285,7 @@ function FakeIndexedDB() {
   this._dbs = {};
   this.failPut = null;
   this.abortNext = false;
+  this.failDelete = null;
 }
 
 FakeIndexedDB.prototype.open = function (name, version) {
@@ -335,9 +345,12 @@ function install(target) {
   host.indexedDB = fake;
   return {
     indexedDB: fake,
-    reset: function () { fake._dbs = {}; fake.failPut = null; fake.abortNext = false; },
+    reset: function () { fake._dbs = {}; fake.failPut = null; fake.abortNext = false; fake.failDelete = null; },
     failNextPut: function (name, code) {
       fake.failPut = { name: name || 'QuotaExceededError', code: code == null ? 22 : code };
+    },
+    failNextDelete: function (name, code) {
+      fake.failDelete = { name: name || 'UnknownError', code: code == null ? 21 : code };
     },
     abortNextTransaction: function () { fake.abortNext = true; },
     failNextOpen: function (err) { fake.failOpen = err || DbError('InvalidStateError', 'injected open failure'); },

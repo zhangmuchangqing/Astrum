@@ -478,6 +478,12 @@
     step.endedAt = null;
     step.durationMs = null;
     T.appendEvent(state, 'step.started', {}, planStep.id);
+    /* R-08：步骤开始时立即通知运行页落盘 running 状态，使跨标签页 pause
+     * 能识别"运行中"而不误判为空闲（否则另一页会直接确认 PAUSED，与
+     * 在飞执行冲突）。钩子异常不阻断执行。 */
+    if (typeof opts.onStepStarted === 'function') {
+      try { await opts.onStepStarted(state, planStep); } catch (e) { /* ignore */ }
+    }
 
     if (!spec) {
       step.endedAt = nowIso();

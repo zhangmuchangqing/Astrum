@@ -418,7 +418,8 @@
     var backend = 'memory';
     var memory = {};
     var initPromise = null;
-    var health = { lastError: null, lastSaveAt: null, lastMigration: null };
+    var health = { lastError: null, lastSaveAt: null, lastMigration: null,
+      updatedAtFallbackUsed: 0, lastUpdatedAtFallbackAt: null };
     /* R-04：localStorage 的跨标签页原子性取决于 Web Locks 是否可用。 */
     var lockName = 'astrum.tasks:' + lsKey;
     var hasLocks = !!webLocks();
@@ -613,6 +614,12 @@
       await init();
       if (projectId && state.projectId && state.projectId !== projectId) {
         throw storeError('PROJECT_MISMATCH', 'task project mismatch');
+      }
+      /* R-10：未传 expectedRevision 的旧调用方走 updatedAt 字符串兜底（已弃用）。
+       * 记账到 health，暴露给运维/验收，提示迁移到显式 revision CAS。 */
+      if (opts.expectedRevision == null) {
+        health.updatedAtFallbackUsed += 1;
+        health.lastUpdatedAtFallbackAt = nowIso();
       }
       var id;
       if (backend === 'idb') {
@@ -850,7 +857,11 @@
         /* R-04：localStorage 后端只有在 Web Locks 可用时才是跨标签页原子的。
          * IDB 由事务保证；memory 不跨上下文共享。 */
         crossTabAtomic: backend === 'idb' ? true : (backend === 'ls' ? hasLocks : false),
-        lockMode: backend === 'ls' ? (hasLocks ? 'web-locks' : 'same-context-only') : null
+        lockMode: backend === 'ls' ? (hasLocks ? 'web-locks' : 'same-context-only') : null,
+        /* R-10：updatedAt 兜底为弃用兼容路径，仅旧调用方使用；新链路一律显式 revision CAS。 */
+        deprecatedUpdatedAtFallback: true,
+        updatedAtFallbackUsed: health.updatedAtFallbackUsed,
+        lastUpdatedAtFallbackAt: health.lastUpdatedAtFallbackAt
       };
     }
 

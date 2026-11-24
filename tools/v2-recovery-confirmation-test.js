@@ -180,6 +180,62 @@ function memStore(seed, opts) {
   var bridged = await Bridge.confirmRecovery(w7.state.id, 's7', 'reuse', { store: store7, agentId: 'muse' });
   ok('V2-R03-17 bridge 透传确认动作', bridged && bridged.confirmed === true, bridged && (bridged.error || bridged.verdict));
 
+  /* 9. R-11：恢复确认与普通审批必须严格区分（仅靠 error.kind 判定，不误动审批）。 */
+  var a1 = waitingState('a1');
+  a1.step.error = { kind: 'skill_approval', message: 'need skill approval', retriable: false };
+  var storeA1 = memStore(a1.state);
+  var rA1 = await C.confirmRecovery(a1.state.id, 'a1', 'reuse', { store: storeA1 });
+  ok('V2-R11-01 skill 审批不会被恢复确认处理',
+    rA1 && rA1.confirmed === false && rA1.error === 'NOT_AWAITING_RECOVERY', rA1 && rA1.error);
+  var stA1 = await storeA1.get(a1.state.id);
+  ok('V2-R11-02 普通审批步骤保持原状未被改动',
+    stA1.steps[0].status === 'waiting_approval' && stA1.steps[0].error.kind === 'skill_approval',
+    stA1.steps[0].status + '/' + stA1.steps[0].error.kind);
+
+  var a2 = waitingState('a2');
+  a2.step.error = { kind: 'claim_approval', message: 'need claim approval', retriable: false };
+  var storeA2 = memStore(a2.state);
+  var rA2 = await C.confirmRecovery(a2.state.id, 'a2', 'rerun', { store: storeA2 });
+  ok('V2-R11-03 claim 审批不会被恢复确认处理',
+    rA2 && rA2.confirmed === false && rA2.error === 'NOT_AWAITING_RECOVERY', rA2 && rA2.error);
+
+  var a3 = waitingState('a3');
+  a3.step.error = null;
+  var storeA3 = memStore(a3.state);
+  var rA3 = await C.confirmRecovery(a3.state.id, 'a3', 'abandon', { store: storeA3 });
+  ok('V2-R11-04 无错误码的等待态不被确认',
+    rA3 && rA3.error === 'NOT_AWAITING_RECOVERY', rA3 && rA3.error);
+
+  var a4 = waitingState('a4');
+  a4.step.status = 'pending';
+  var storeA4 = memStore(a4.state);
+  var rA4 = await C.confirmRecovery(a4.state.id, 'a4', 'reuse', { store: storeA4 });
+  ok('V2-R11-05 仅错误码不足以触发确认（必须 waiting_approval）',
+    rA4 && rA4.error === 'NOT_AWAITING_RECOVERY', rA4 && rA4.error);
+
+  /* UI 确认入口条件与 app.js 一致：waiting_approval 且 error.kind=recovery_confirmation_required。 */
+  var uiState = T.create({ question: 'ui 混合审批', level: 'L3', phase: 'EXECUTE' });
+  uiState.plan = { planId: 'pui', version: 1, steps: [
+    { id: 'u1', tool: 't1', deps: [], args: {} },
+    { id: 'u2', tool: 't2', deps: [], args: {} },
+    { id: 'u3', tool: 't3', deps: [], args: {} }
+  ] };
+  uiState.steps = uiState.plan.steps.map(T.makeStep);
+  uiState.steps[0].status = 'waiting_approval';
+  uiState.steps[0].error = { kind: 'skill_approval', message: 'skill', retriable: false };
+  uiState.steps[1].status = 'waiting_approval';
+  uiState.steps[1].error = { kind: 'recovery_confirmation_required', message: 'hash mismatch', retriable: false };
+  uiState.steps[2].status = 'ok';
+  var confirmSteps = uiState.steps.filter(function (s) {
+    return s && s.status === 'waiting_approval' && s.error &&
+      s.error.kind === 'recovery_confirmation_required';
+  });
+  ok('V2-R11-06 UI 确认入口只匹配恢复确认步骤',
+    confirmSteps.length === 1 && confirmSteps[0].id === 'u2',
+    confirmSteps.map(function (s) { return s.id; }).join(','));
+  ok('V2-R11-07 混合等待态整体仍标记为待审批',
+    uiState.steps.some(function (s) { return s.status === 'waiting_approval'; }));
+
   console.log('\nRESULT ' + pass + '/' + (pass + fail));
   process.exit(fail ? 1 : 0);
 })().catch(function (e) {

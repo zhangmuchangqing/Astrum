@@ -47,7 +47,7 @@ function stateWith(defs) {
 
 var st = stateWith([
   { id: 'a', tool: 'unknown.tool' },                                  /* 凭证一致 → reuse */
-  { id: 'b', tool: 'unknown.tool', hash: 'deadbeef' },                /* 哈希不符 → block */
+  { id: 'b', tool: 'unknown.tool', hash: 'deadbeef' },                /* 短哈希不可核验 → 人工确认 */
   { id: 'c', tool: 'unknown.tool', provVersion: '1.9.0' },            /* 版本变化 → block */
   { id: 'd', tool: 'idem.tool', provVersion: '1.0.0' },               /* 显式幂等且版本一致 → reuse */
   { id: 'e', tool: 'nonidem.tool' },                                  /* 显式非幂等只读 → rerun */
@@ -72,10 +72,23 @@ ok('V2-IDEM-07b 有外部副作用步骤不自动重跑', applied.confirm.indexO
   byId.g.status === 'waiting_approval');
 
 /* 外部直接调用 decide 也必须经过凭证校验（使用未变更的步骤副本） */
-var fresh = stateWith([{ id: 'hb', tool: 'unknown.tool', hash: 'deadbeef' }]);
+var fresh = stateWith([{ id: 'hb', tool: 'unknown.tool', hash: new Array(65).join('a') }]);
 var directBad = R.decide(fresh, fresh.steps[0], registry, Date.now());
-ok('V2-IDEM-08 直接 decide 对哈希不符要求人工确认',
+ok('V2-IDEM-08 直接 decide 对 64 位哈希不符要求人工确认',
   directBad.strategy === 'confirm' && directBad.reason === 'unknown_idempotency_hash_mismatch', directBad.reason);
+
+/* R-12：短哈希/非 64-hex 无法作为可信基准，语义是“不可核验”而非“不符”，同样进入人工确认。 */
+var shortHash = stateWith([{ id: 'hs', tool: 'unknown.tool', hash: 'deadbeef' }]);
+var directShort = R.decide(shortHash, shortHash.steps[0], registry, Date.now());
+ok('V2-IDEM-08a 短哈希判定为不可核验并进入人工确认',
+  directShort.strategy === 'confirm' && directShort.reason === 'unknown_idempotency_unverified', directShort.reason);
+
+/* R-12：完整 64 位哈希一致仍复用；大写哈希也应按不敏感比较通过。 */
+var upper = stateWith([{ id: 'hu', tool: 'unknown.tool',
+  hash: T.sha256Hex(T.canonicalJSON({ ok: true, value: 'hu' })).toUpperCase() }]);
+var directUpper = R.decide(upper, upper.steps[0], registry, Date.now());
+ok('V2-IDEM-08c 64 位哈希大小写不敏感仍可复用',
+  directUpper.strategy === 'reuse' && directUpper.reason === 'unknown_idempotent_verified', directUpper.reason);
 var directGood = R.decide(st, byId.a, registry, Date.now());
 ok('V2-IDEM-08b 直接 decide 对凭证一致返回 verified reuse',
   directGood.strategy === 'reuse' && directGood.reason === 'unknown_idempotent_verified', directGood.reason);

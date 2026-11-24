@@ -233,3 +233,23 @@
 core 回归（本次实跑）：`control-test` **86/86**、`v2-task-pause-resume-test` **21/21**、`v2-recovery-confirmation-test` **17/17**、`v2-localstorage-cas-test` **11/11**、`v2-abortable-tools-test` **13/13**，全部 PASS，工作树无测试污染。i18n 检查（英文模式）：界面残留维持 **27 条**（与改动前基线一致），新增暂停文案均有 `i18n.en-extra.js` 词条，扫描结果中无暂停相关中文残留。
 
 结论：阶段 B 的暂停流程已完成真实浏览器端到端点击验收，`PAUSE_REQUESTED → PAUSED` 的 UI 呈现来自真实状态与真实事件，不伪造 PASS。门控慢工具是确定性验收夹具，真实工具可中断边界仍见 R-01/R-02。
+
+## 十二、R-08 ~ R-12 修复后的追加验证（2026-11-24）
+
+修复内容概述：
+- **R-08**：`core/control.js` 引入 `BroadcastChannel('astrum.control.pause')` 跨标签页暂停广播（仅浏览器窗口存在时创建）、`persist()` 对 `STALE_WRITE` 做一次「取最新 revision 并吸收 `pauseRequestedAt` 后重试」，`core/orchestrator.js` 在步骤标记 `running` 后回调 `onStepStarted` 落盘。
+- **R-09**：固化检查点裁剪为「主事务提交后独立执行、失败吞掉」的刻意设计，并用故障注入证明其隔离性。
+- **R-10**：`getHealth()` 暴露 `deprecatedUpdatedAtFallback / updatedAtFallbackUsed / lastUpdatedAtFallbackAt`，对无 `expectedRevision` 的旧调用方记账弃用。
+- **R-11**：不改状态机，补测试证明恢复确认与普通审批严格区分。
+- **R-12**：`validateFidelity` 增加显式 64-hex 判定，统一注释与错误码语义。
+
+| 测试 | 结果 | 关键覆盖 |
+|---|---|---|
+| `tools/v2-cross-tab-pause-test.js` | **14/14 PASS** | 双标签页沙箱：B 页 pause 广播 → A 页在飞中止、PAUSED 收尾、`pausedAt` 落盘、事件链完整；无 BroadcastChannel 时退化轮询且不建通道 |
+| `tools/v2-checkpoint-prune-test.js` | **17/17 PASS** | 裁剪事务 delete 故障注入下保存仍成功且 revision 递增、无部分删除、最新检查点可读；正常路径裁剪回落到 20；内存态检查点维持 20 |
+| `tools/v2-multi-tab-concurrency-test.js` | **20/20 PASS** | 原 17 项 + R-10 弃用标记、兜底计数、显式 revision 不计入 |
+| `tools/v2-recovery-confirmation-test.js` | **24/24 PASS** | 原 17 项 + R-11 skill/claim 审批不被恢复确认处理、保持原状、无错误码/非等待态被拒、UI 只筛选恢复确认步骤 |
+| `tools/v2-recovery-idempotency-test.js` | **13/13 PASS** | 原 10 项 + R-12 短哈希=unverified、64-hex 不符=hash_mismatch、大写 64-hex 一致可复用 |
+| `tools/v2-idempotency-recovery-test.js` | **16/16 PASS** | 回归：哈希不符进入人工确认且不覆盖原结果 |
+
+结论：R-08~R-12 均以真实测试证据通过，不伪造 PASS；R-09/R-10/R-11 为「固化既有刻意设计 + 增强可观测/区分测试」，R-12 为「收紧校验语义」，均未引入破坏性迁移。

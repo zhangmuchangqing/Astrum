@@ -189,6 +189,18 @@ function injectRaw(dbName, rec) {
   try { await sp.save(stale10); } catch (e) { tErr = e; }
   ok('V2-MT-17 无 expectedRevision 时 updatedAt 兜底', tErr && tErr.code === 'STALE_WRITE', tErr && tErr.code);
 
+  /* 11. R-10：旧调用方的 updatedAt 兜底被显式标记为弃用并在 health 记账 */
+  var h10 = sp.getHealth();
+  ok('V2-MT-18 兜底路径标记为弃用', h10.deprecatedUpdatedAtFallback === true);
+  ok('V2-MT-19 无 revision 保存计入兜底计数', h10.updatedAtFallbackUsed >= 1 && !!h10.lastUpdatedAtFallbackAt,
+    h10.updatedAtFallbackUsed + '@' + h10.lastUpdatedAtFallbackAt);
+  var beforeFallback = h10.updatedAtFallbackUsed;
+  var rec10b = await sp.getRecord(id10);
+  await sp.save(loadState(rec10b), { expectedRevision: rec10b.revision });
+  var h10b = sp.getHealth();
+  ok('V2-MT-20 显式 revision 保存不增加兜底计数', h10b.updatedAtFallbackUsed === beforeFallback,
+    h10b.updatedAtFallbackUsed - beforeFallback);
+
   console.log('\nRESULT ' + pass + '/' + (pass + fail));
   process.exit(fail ? 1 : 0);
 })().catch(function (e) {

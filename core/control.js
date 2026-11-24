@@ -18,6 +18,8 @@
     if (typeof AbortController === 'function') {
       ctl = new AbortController();
       activeRuns[taskId] = { ctl: ctl, state: state || null };
+      /* R-08：运行页必须主动建立接收端监听，否则收不到其他标签页的暂停广播。 */
+      pauseBus();
       if (external) {
         if (external.aborted) {
           try { ctl.abort(external.reason || 'user'); } catch (e) { /* ignore */ }
@@ -43,6 +45,38 @@
   function activeState(taskId) {
     var entry = activeRuns[taskId];
     return entry ? entry.state : null;
+  }
+
+  /* R-08：跨标签页暂停通知总线。
+   * 仅浏览器启用：Node 无跨标签页语义，且 BroadcastChannel 会使进程无法退出。
+   * 定位为「加速中止」——收到消息只 abort 本页在飞运行，绝不直接确认 PAUSED；
+   * 权威收尾仍由运行页在安全边界经 confirmPauseWith + CAS 完成（与轮询路径同源）。
+   * 无 BroadcastChannel 时完全退化为批次边界轮询（orchestrator 已实现），行为不变。 */
+  var pauseChannel = null;
+  var PAUSE_CHANNEL = 'astrum.control.pause';
+
+  function pauseBus() {
+    if (typeof window === 'undefined' || typeof BroadcastChannel !== 'function') return null;
+    if (pauseChannel) return pauseChannel;
+    try {
+      pauseChannel = new BroadcastChannel(PAUSE_CHANNEL);
+      pauseChannel.onmessage = function (ev) {
+        var d = ev && ev.data;
+        if (!d || d.type !== 'pause-request' || !d.taskId) return;
+        /* 只加速本标签页确实在运行的任务；重复消息由 signal.aborted 幂等吸收。 */
+        if (activeRuns[d.taskId]) abortActive(d.taskId, 'pause');
+      };
+      return pauseChannel;
+    } catch (e) { pauseChannel = null; return null; }
+  }
+
+  function announcePause(taskId, at) {
+    var bus = pauseBus();
+    if (!bus) return false;
+    try {
+      bus.postMessage({ type: 'pause-request', taskId: taskId, at: at || new Date().toISOString() });
+      return true;
+    } catch (e) { return false; }
   }
 
   function abortActive(taskId, reason) {
@@ -331,18 +365,46 @@
     var cpWritten = {};
     /* B4：本次运行的所有保存都携带同一个修订号，旧修订写入会被 STALE_WRITE 拒绝。 */
     var expectedRev = 0;
+    var r08Retried = false;
     var persist = function () {
       return saveState(rt.store, state, rt.principal, {
         expectedRevision: expectedRev, rethrow: true
       }).then(function (id) {
         if (id) expectedRev += 1;
         return id;
+      }).catch(function (e) {
+        /* R-08：跨标签页并发时，对方页（如 pause 的持久化请求）会先行提交并推进
+         * revision。运行页与其硬顶撞失败，不如重读最新修订、吸收对方已写入的
+         * pauseRequestedAt（避免丢暂停请求），再以新修订重试一次。仍失败才上抛。
+         * 与 B4/CAS 的一致性约束不冲突：expectedRevision 以本次刷新为准。 */
+        if (!e || e.code !== 'STALE_WRITE' || !rt.store || r08Retried) return Promise.reject(e);
+        r08Retried = true;
+        return (rt.store.getRecord ? rt.store.getRecord(state.id) : Promise.resolve(null))
+          .then(function (rec) {
+            var freshRev = rec && typeof rec.revision === 'number' ? rec.revision : null;
+            if (freshRev == null) throw e;
+            return (rt.store.get ? rt.store.get(state.id) : Promise.resolve(null)).then(function (latest) {
+              if (latest && latest.pauseRequestedAt && !state.pauseRequestedAt) {
+                state.pauseRequestedAt = latest.pauseRequestedAt;
+                try { T.appendEvent(state, 'task.pause_requested', {
+                  at: latest.pauseRequestedAt, via: 'cross-tab'
+                }); } catch (e2) { /* ignore */ }
+                announcePause(state.id, latest.pauseRequestedAt);
+              }
+              expectedRev = freshRev;
+              return persist();
+            });
+          });
       });
     };
     /* P4：每个批次结束后落盘；critical 成功步骤同时生成检查点。 */
     var onBatchSettled = async function () {
       checkpointCriticalSteps(state, cpWritten);
       await persist();
+    };
+    /* R-08：步骤开始即落盘 running 状态（跨页可见）；失败吞掉，不阻断执行。 */
+    var notifyStepStarted = function () {
+      return persist().catch(function () { return null; });
     };
 
     /* P0：任务创建前置授权。无 Profile 的 Node 环境 principal=null，保持旧行为。 */
@@ -419,7 +481,8 @@
       registry: rt.registry, ctx: ctx, cfg: cfg, adapter: rt.adapter,
       signal: runSignal,
       principal: rt.principal,
-      onBatchSettled: onBatchSettled
+      onBatchSettled: onBatchSettled,
+      onStepStarted: notifyStepStarted
     });
 
     if (runner && runner.aborted) {
@@ -503,7 +566,8 @@
       runner = await O.runPlan(newPlan, state, {
         registry: rt.registry, ctx: ctx, cfg: cfg, adapter: rt.adapter,
         signal: runSignal,
-        onBatchSettled: onBatchSettled
+        onBatchSettled: onBatchSettled,
+        onStepStarted: notifyStepStarted
       });
       currentPlan = newPlan;
 
@@ -594,7 +658,8 @@
       runner = await O.runPlan(expanded, state, {
         registry: rt.registry, ctx: ctx, cfg: cfg, adapter: rt.adapter,
         signal: runSignal,
-        onBatchSettled: onBatchSettled
+        onBatchSettled: onBatchSettled,
+        onStepStarted: notifyStepStarted
       });
       appendRounds += 1;
       checkpointCriticalSteps(state, cpWritten);
@@ -838,7 +903,12 @@
         }
         return { state: state, verdict: 'PAUSED', paused: true, already: true };
       }
-      return { state: state, verdict: 'PAUSE_REQUESTED', paused: false, pauseRequested: true, already: true };
+      /* 请求已存在且仍有活动步骤：重播通知，加速运行页收尾（幂等）。 */
+      var reAnnounced = announcePause(taskId, state.pauseRequestedAt);
+      return {
+        state: state, verdict: 'PAUSE_REQUESTED', paused: false,
+        pauseRequested: true, already: true, announced: reAnnounced
+      };
     }
 
     state.pauseRequestedAt = new Date().toISOString();
@@ -863,7 +933,9 @@
       return { state: state, verdict: 'PAUSED', paused: true, interrupted: false };
     }
 
-    /* 跨标签页运行中：只持久化暂停请求，不提前标记 PAUSED。 */
+    /* 跨标签页运行中：只持久化暂停请求，不提前标记 PAUSED。
+     * R-08：请求落盘后广播，运行页收到即可中止在飞步骤（加速收尾）；
+     * 广播失败不影响正确性——批次边界轮询仍是等价回退路径。 */
     var store = opts.store || defaultStore();
     try {
       await saveState(store, state, principal, { expectedRevision: loaded.revision, rethrow: true });
@@ -875,6 +947,7 @@
         pauseRequested: false, error: (e && e.code) || 'PERSIST_TX_FAILED'
       };
     }
+    var announced = announcePause(taskId, state.pauseRequestedAt);
     if (root.AuditLog) {
       root.AuditLog.record({
         action: 'task.pause', resourceType: 'task', resourceId: taskId,
@@ -883,7 +956,10 @@
     }
     return {
       state: state, verdict: 'PAUSE_REQUESTED', paused: false, pauseRequested: true,
-      message: '当前操作不支持立即中断，将在安全边界后暂停。'
+      announced: announced,
+      message: announced
+        ? '暂停请求已广播到运行标签页，将在安全边界后暂停。'
+        : '当前操作不支持立即中断，将在安全边界后暂停。'
     };
   }
 
@@ -1281,6 +1357,15 @@
     resume: resume,
     contextOf: contextOf,
     successfulStepResults: successfulStepResults,
-    maxReplansOf: maxReplansOf
+    maxReplansOf: maxReplansOf,
+    /* R-08 测试钩子：只读观察当前标签页活跃运行与通知总线，供跨标签页验收。 */
+    _diagnostics: function () {
+      var ids = Object.keys(activeRuns);
+      return {
+        activeTaskIds: ids,
+        channelActive: !!pauseChannel,
+        channelName: PAUSE_CHANNEL
+      };
+    }
   };
 })(typeof window !== 'undefined' ? window : global);

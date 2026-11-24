@@ -295,7 +295,10 @@
   }
 
   /* 未知幂等性的凭证校验：结果哈希、工具/Skill 版本、上下文、Profile、授权、持久化。
-   * 只有 64 位 SHA-256 记录才复算哈希，避免把历史短哈希记录误判为篡改。 */
+   * 只有完整的 64 位十六进制 SHA-256 记录才复算哈希：短哈希/非 64-hex 视为「不可核验」
+   * （unknown_idempotency_unverified）；64 位但复算不等才是「哈希不符」
+   * （unknown_idempotency_hash_mismatch）。两者都进入人工确认。
+   * 严禁按当前结果反推或回填哈希——历史结果不可信，不能因此标记为“已验证”。 */
   function validateFidelity(step, spec, opts) {
     var T = root.AstroTask;
     opts = opts || {};
@@ -306,9 +309,13 @@
     if (typeof step.outputHash !== 'string' || !step.outputHash) {
       return { ok: false, reason: 'unknown_idempotency_unverified' };
     }
+    if (!/^[0-9a-f]{64}$/i.test(step.outputHash)) {
+      /* 短哈希或非十六进制：无法作为可信 SHA-256 复算基准，语义是“不可核验”而非“核验不符”。 */
+      return { ok: false, reason: 'unknown_idempotency_unverified' };
+    }
     var recomputed = null;
     try { recomputed = T.sha256Hex(T.canonicalJSON(step.result)); } catch (e) { recomputed = null; }
-    if (!recomputed || recomputed !== step.outputHash) {
+    if (!recomputed || recomputed.toLowerCase() !== step.outputHash.toLowerCase()) {
       return { ok: false, reason: 'unknown_idempotency_hash_mismatch' };
     }
     return { ok: true };

@@ -76,27 +76,36 @@
 
 ## R-09 检查点裁剪在事务提交后执行
 
-- 事实：任务/事件/检查点同事务写入，`pruneCheckpoints` 在提交后单独执行。
+- 状态：**已固化（2026-11-24 补充）**，为刻意设计，不移入主事务。
+- 事实：任务/事件/检查点同事务写入，`pruneCheckpoints` 在提交后单独执行并吞掉失败。
 - 影响：裁剪前崩溃会留下多余检查点，不影响权威任务记录与恢复正确性。
 - 已做：歧义只存在于派生数据数量，不影响一致性。
+- 已做：新增 `tools/v2-checkpoint-prune-test.js` **17/17 PASS**，用独立 `delete` 故障注入证明——裁剪事务失败时保存仍成功（返回 id、`revision` 递增、按 id 可读、最新检查点可读、无部分删除）；正常路径把派生检查点回落到保留上限；内存态检查点自身维持 20 个且 `version` 连续。
+- 理由（固化）：检查点与事件是权威 `TaskState` 的派生索引，规模受 `CP_KEEP=20` 约束；把裁剪放进主事务会让「清理派生数据」的偶发失败升级为「权威记录保存失败」，收益极小、风险更大。因此刻意保留「主事务落定后独立裁剪、失败吞掉」，只保证数量幂等，不保证裁剪即时完成。
 
 ## R-10 旧调用方仍可使用 updatedAt 兜底
 
+- 状态：**已加固与标记弃用（2026-11-24 补充）**，兼容路径保留、不强制移除。
 - 事实：未传 `expectedRevision` 的旧调用方保留 `updatedAt` 字符串比较。
 - 影响：时钟回拨或同毫秒写入仍可能漏检；新链路（Control/run/resume）全部使用 `expectedRevision`。
-- 已做：旧接口兼容，P4S-10 保留；P4S-09 验证 revision 主路径。
-- 未做：强制所有外部调用方升级会破坏兼容性。
+- 已做：`getHealth()` 新增 `deprecatedUpdatedAtFallback: true`、`updatedAtFallbackUsed` 计数与 `lastUpdatedAtFallbackAt`；每次无 revision 保存都记账，运维/验收可据此发现仍在走弃用路径的调用方。
+- 已做：`tools/v2-multi-tab-concurrency-test.js` 扩展至 **20/20 PASS**，覆盖兜底拦截（`STALE_WRITE`）、弃用标记、无 revision 保存计入计数、显式 revision 保存不增加计数。
+- 未做：强制所有外部调用方升级会破坏兼容性（架构变更说明已记录兼容为刻意设计），本阶段只做「可观测 + 弃用标记」。
 
 ## R-11 恢复确认状态使用既有 `waiting_approval`
 
+- 状态：**已固化并强化区分测试（2026-11-24 补充）**，不新增步骤状态。
 - 事实：没有新增步骤状态，复用既有审批状态并增加 `error.kind` 区分。
 - 影响：既有审批 UI 可能把恢复确认当作普通审批展示；语义靠 `error.kind` 区分。
-- 已做：错误码稳定，任务不会被误判完成。
-- 未做：新增独立状态需要迁移分析与 UI 改造，本阶段未做。
+- 已做：错误码稳定，任务不会被误判完成；`confirmRecovery` 仅在 `status==='waiting_approval' && error.kind==='recovery_confirmation_required'` 时动作，否则 `NOT_AWAITING_RECOVERY` 拒绝；UI 确认入口使用同一条判定。
+- 已做：`tools/v2-recovery-confirmation-test.js` 扩展至 **24/24 PASS**，新增验证 skill/claim 普通审批不被恢复确认动作处理、步骤保持原状、无错误码等待态被拒、仅错误码但非等待态被拒、混合等待态下 UI 只筛选出恢复确认步骤。
+- 未做：新增独立状态需要迁移分析与 UI 改造，本阶段未做（复用为刻意设计）。
 
 ## R-12 历史任务的无哈希/短哈希结果不会复用
 
+- 状态：**已加固校验语义（2026-11-24 补充）**，不做猜测式哈希迁移。
 - 事实：UNKNOWN 步骤必须复算 SHA-256；旧记录若没有完整哈希会进入人工确认。
 - 影响：旧任务恢复时可能需要人工确认，而不是静默复用；这是安全性收紧。
-- 已做：明确错误原因 `unknown_idempotency_*`。
-- 未做：不做“猜测式”迁移哈希，避免把不可信结果标记为已验证。
+- 已做：`validateFidelity` 增加显式 64 位十六进制判定——空/非字符串/短哈希/非 64-hex 统一为 `unknown_idempotency_unverified`（不可核验）；只有完整 64-hex 但复算不等才是 `unknown_idempotency_hash_mismatch`；哈希比较大小写不敏感。两者都进入人工确认，注释与错误码语义一致。
+- 已做：`tools/v2-recovery-idempotency-test.js` 扩展至 **13/13 PASS**（新增短哈希=unverified、64-hex 不符=hash_mismatch、大写 64-hex 一致可复用）；`tools/v2-idempotency-recovery-test.js` **16/16 PASS** 回归。
+- 未做：不做“猜测式”迁移/回填哈希，避免把不可信的历史结果标记为已验证；旧任务仍可能需人工确认，这是有意的安全边界。

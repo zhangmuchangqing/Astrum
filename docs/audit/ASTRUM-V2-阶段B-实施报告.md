@@ -153,12 +153,12 @@
 
 | 文件 | 内容 |
 |---|---|
-| `core/orchestrator.js` | withTimeout 真取消、abort 三字段、取消分类、不支持取消的安全边界、暂停请求不再分发、provenance 上下文/Profile、executionId/idempotencyKey/外部回执 |
-| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记；R-03：新增 `confirmRecovery` 显式确认动作（rerun/reuse/abandon，授权+CAS+事件）；R-07：`run()` 新增 `onTask(id, state)` 观察者，让运行中 UI 尽早拿到真实 taskId（异常不影响任务） |
-| `core/recovery.js` | 复用上下文校验、UNKNOWN 验证失败转人工确认、非幂等副作用保护、外部回执校验、confirm 策略；R-03：尊重 `recoveryConfirmation` 人工决策（复用不翻转、rerun 一次性标记），导出 `resetForRerun` |
+| `core/orchestrator.js` | withTimeout 真取消、abort 三字段、取消分类、不支持取消的安全边界、暂停请求不再分发、provenance 上下文/Profile、executionId/idempotencyKey/外部回执；R-08：步骤标记 `running` 后回调 `onStepStarted`，使运行态及时落盘（异常不阻断） |
+| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记；R-03：新增 `confirmRecovery` 显式确认动作（rerun/reuse/abandon，授权+CAS+事件）；R-07：`run()` 新增 `onTask(id, state)` 观察者，让运行中 UI 尽早拿到真实 taskId（异常不影响任务）；R-08：新增 `BroadcastChannel('astrum.control.pause')` 跨标签暂停广播（仅浏览器窗口创建），`persist()` 对 `STALE_WRITE` 取最新 revision 并吸收 `pauseRequestedAt` 后重试一次 |
+| `core/recovery.js` | 复用上下文校验、UNKNOWN 验证失败转人工确认、非幂等副作用保护、外部回执校验、confirm 策略；R-03：尊重 `recoveryConfirmation` 人工决策（复用不翻转、rerun 一次性标记），导出 `resetForRerun`；R-12：`validateFidelity` 显式 64-hex 判定（短哈希=unverified、64 位不符=hash_mismatch、大小写不敏感），不迁移/回填历史哈希 |
 | `core/tool-gateway.js` | 向工具透传 executionId/idempotencyKey |
 | `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验；R-03：新增 `task.recovery_confirmed` 事件类型 |
-| `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested`；R-04：localStorage 后端 read-compare-write 包进 Web Locks（owner 命名空间锁名），健康信息暴露 `crossTabAtomic/lockMode`，锁回调异常转 rejection 保证释放 |
+| `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested`；R-04：localStorage 后端 read-compare-write 包进 Web Locks（owner 命名空间锁名），健康信息暴露 `crossTabAtomic/lockMode`，锁回调异常转 rejection 保证释放；R-09：固化检查点裁剪为提交后独立事务、失败吞掉；R-10：`getHealth()` 暴露 `deprecatedUpdatedAtFallback/updatedAtFallbackUsed/lastUpdatedAtFallbackAt` 并对无 revision 保存记账 |
 | `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl`；R-07：新增 `pause(taskId, opts)`（含 principal/store 与 profile 归属校验）、透传 `onTask`、透传控制结果 `paused/pauseRequested/verdict` |
 | `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口；R-07：`controlAnswer()` 运行中 UI 新增「暂停」按钮并接入真实 `AstroControl.pause()`，按时序呈现 `PAUSE_REQUESTED → PAUSED`，消费暂停事件，暂停收尾不作为失败 |
 | `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露；R-01/R-02：`evidence.search`/`paper.search`/`llm.compose` 改 `abortable:true`，检索链路透传 `runtime.signal`，取消/暂停映射 `pendingAbort + pause + abortCode` |
@@ -176,6 +176,12 @@
 | `tools/v2-recovery-confirmation-test.js` | 新增（R-03）：rerun/reuse/abandon、状态迁移、事件、重复恢复、权限/CAS、bridge 透传 |
 | `tools/v2-localstorage-cas-test.js` | 新增（R-04）：Web Locks 跨标签 CAS、并发恰一成功、不同任务互不抹除、无锁降级标记、owner 隔离、锁异常释放 |
 | `tools/v2-pause-browser-test.js` | 新增（R-07）：真实 headless Chrome + 本地 HTTP + CDP，注入可中止门控慢工具；真点击「暂停」→ PAUSE_REQUESTED → PAUSED、持久化事件/abortCode、刷新后真点击「继续任务」恢复；15/15 PASS |
+| `tools/v2-cross-tab-pause-test.js` | 新增（R-08）：双标签页沙箱（互联假 BroadcastChannel + 共享 store）；B 页 pause 广播 → A 页在飞中止、PAUSED 收尾、`pausedAt` 落盘、事件链完整；无 BC 退化轮询且不建通道；14/14 PASS |
+| `tools/v2-checkpoint-prune-test.js` | 新增（R-09）：裁剪事务 `delete` 故障注入下保存仍成功且 revision 递增、无部分删除、最新检查点可读；正常路径裁剪到 20；内存态检查点维持 20；17/17 PASS |
+| `tools/fake-idb.js` | 增加独立 `failNextDelete` 故障注入（只影响 delete，不影响权威保存的主事务 put）；R-04 串行隔离保持 |
+| `tools/v2-multi-tab-concurrency-test.js` | 扩展（R-10）：新增弃用标记、兜底计数、显式 revision 不计入断言；20/20 PASS |
+| `tools/v2-recovery-confirmation-test.js` | 扩展（R-11）：skill/claim 审批不被恢复确认处理、保持原状、无错误码/非等待态被拒、UI 只筛选恢复确认步骤；24/24 PASS |
+| `tools/v2-recovery-idempotency-test.js` | 扩展（R-12）：短哈希=unverified、64-hex 不符=hash_mismatch、大写 64-hex 一致可复用；13/13 PASS |
 
 ## 四、接口与兼容性
 
@@ -187,6 +193,11 @@
 - R-03：`confirmRecovery` 为新增 API，旧调用方不传 decision 时行为不变；`recoveryConfirmation` 为可选 provenance 字段，旧任务无此字段时仍走原自动推导；新增 `task.recovery_confirmed` 事件类型不改变既有事件语义。
 - R-04：`getHealth()` 新增 `crossTabAtomic/lockMode` 只读字段，不改变既有字段语义；Web Locks 为浏览器原生能力，不新增依赖；无 Web Locks 时行为与修复前一致（单上下文同步原子段）。
 - R-07：`run()/runWithRoute()` 的 `opts` 新增可选 `onTask(id, state)` 观察者，不传时行为完全不变；`control-bridge` 新增 `pause()` 导出并透传 `paused/pauseRequested`，旧调用方读取结果原有字段不受影响；UI 新增暂停按钮属于新增入口，不改变取消/恢复既有流程。E2E 使用零依赖 headless Chrome，不新增 npm 依赖。
+- R-08：`run()` 的 `opts` 新增可选 `onStepStarted` 回调（不传时行为不变）；`BroadcastChannel` 仅在浏览器窗口存在时创建，Node 环境不建；跨页暂停广播失败时仍以批次边界轮询为等价回退，不改变 PAUSED 的权威判定位置。
+- R-09：检查点裁剪保持「提交后独立事务、失败吞掉」，不改变权威记录保存语义；仅以测试固化隔离性，未移入主事务。
+- R-10：`getHealth()` 新增 `deprecatedUpdatedAtFallback/updatedAtFallbackUsed/lastUpdatedAtFallbackAt` 只读字段；`save(state)` 不带 `expectedRevision` 仍兼容，不破坏旧调用方。
+- R-11：不新增步骤状态，仅以测试固化 `error.kind` 区分与 UI 入口条件；无接口变更。
+- R-12：`validateFidelity` 对短哈希的判定由「哈希不符」调整为「不可核验」（两者都进入人工确认），属于语义修正而非放宽；完整 64-hex 比较改为大小写不敏感，不改变可复用条件。
 - 工具注册新增字段，不重构注册表；未声明工具按“不支持取消 + 有副作用风险”保守处理。
 - 未修改 Security、Principal、Profile 分库和 ToolGateway 授权链。
 

@@ -75,6 +75,7 @@ EXECUTE → (signal user) → ABORTED
 - `ABORTED` 不满足 `isResumable`，普通恢复入口拒绝。
 - `pausedAt` 与 `pauseRequestedAt` 互斥存在于“已确认暂停”状态；请求阶段只写 `pauseRequestedAt`。
 - 合法迁移表未改；`waiting_approval` 沿用既有审批语义，用于恢复人工确认。
+- R-11：恢复确认与普通审批共用 `waiting_approval`，但严格以 `error.kind='recovery_confirmation_required'` 区分；`confirmRecovery` 仅在 `status==='waiting_approval'` 且该 kind 匹配时动作，skill/claim 等普通审批不会被恢复确认动作处理，UI 确认入口使用同一条判定。此复用为刻意设计，本阶段不新增独立状态。
 
 事件：
 
@@ -165,6 +166,21 @@ R-03 显式确认动作：`AstroControl.confirmRecovery(taskId, stepId, decision
 
 该判断位于 `decide()`，因此 `AstroRecovery.plan/apply/decide` 的任何外部直接调用都走同一规则。`idempotencyKey` 是传递契约，不宣称第三方服务一定识别；远端真正支持幂等键时，重试可安全复用同一 key。
 
+### 结果完整性校验（R-12）
+
+`validateFidelity(step, spec, opts)` 对 UNKNOWN 步骤复核结果凭证：
+
+```
+无 outputHash / 非字符串           → unknown_idempotency_unverified   （不可核验）
+非 64 位十六进制（短哈希/非法）     → unknown_idempotency_unverified   （不可核验）
+完整 64-hex 且复算一致（大小写不敏感）→ ok（可复用）
+完整 64-hex 但复算不等              → unknown_idempotency_hash_mismatch（哈希不符）
+```
+
+- 「不可核验」与「哈希不符」都进入人工确认，不静默复用。
+- 严禁按当前结果反推或回填历史哈希：历史结果不可信，不能因此标记为“已验证”。
+- 注释、错误码与实现保持一致，避免把短哈希误判为“被篡改”。
+
 ## 五、IndexedDB 并发控制
 
 `AstroTaskStore.save(state, { expectedRevision })`：
@@ -180,12 +196,12 @@ db.transaction([tasks, events, checkpoints, meta], 'readwrite')
 
 - 比较与写入处于同一事务；不再“事务外 get、事务内 put”。
 - 事件与检查点与任务记录同事务写入，避免任务成功而派生记录缺失。
-- 检查点裁剪在提交后执行，失败不影响主记录一致性（最多留下多余检查点）。
+- 检查点裁剪在提交后执行，失败不影响主记录一致性（最多留下多余检查点）。这是刻意设计（R-09）：裁剪/事件都是权威 `TaskState` 的派生索引，规模受 `CP_KEEP=20` 约束；放进主事务会让派生清理的偶发失败升级为权威保存失败，收益极小、风险更大。`tools/v2-checkpoint-prune-test.js` 17/17 用独立事务故障注入证明隔离性。
 - localStorage 回退：整段读-比较-写在 Web Locks（按 owner 命名空间命名的跨上下文互斥锁）内完成，具备跨标签页原子 CAS；并发保存同一任务恰一成功一 `STALE_WRITE`，整张 map 的写也不会抹掉其他标签页并发保存的任务。Web Locks 不可用时退化为单上下文同步段，`getHealth()` 明确标记 `crossTabAtomic=false / lockMode='same-context-only'`，不伪造跨标签保证；锁回调异常统一转 rejection 以保证释放。
 - memory 回退：每个 `create()` 实例独有，不跨上下文共享，不属于跨标签页存储方案；`getHealth().crossTabAtomic=false` 明确标记该边界。跨浏览器/跨设备的真正 CAS 仍需 IDB 或服务端，不在本阶段范围。
 - 错误契约：冲突 `STALE_WRITE`；事务中断/失败 `PERSIST_TX_FAILED`；配额 `QUOTA_EXCEEDED`；记录不存在由读取层返回 `null`，不伪造空记录。
-- 历史：无 `revision` 记录按 1；旧格式状态可直接加载；未传 `expectedRevision` 的旧调用方保留 `updatedAt` 兜底。
-- BroadcastChannel 未作为依赖；所有一致性由事务保证。
+- 历史：无 `revision` 记录按 1；旧格式状态可直接加载；未传 `expectedRevision` 的旧调用方保留 `updatedAt` 兜底。`updatedAt` 兜底已标记弃用（R-10）：`getHealth()` 暴露 `deprecatedUpdatedAtFallback=true` 与 `updatedAtFallbackUsed / lastUpdatedAtFallbackAt`，无 revision 保存会计账，便于发现仍在走旧路径的调用方；新链路一律显式 revision CAS。
+- BroadcastChannel 未作为依赖；所有一致性由事务保证。R-08 的跨标签暂停广播只做「加速收尾」，权威 `PAUSED` 仍由运行页在安全边界持久化确认。
 
 ## 六、事件与检查点一致性
 
@@ -218,6 +234,26 @@ controlAnswer() 运行中 UI
 - taskId 由 `onTask` 观察者提供而非 `onEvent`：`onEvent` 要等批次/终态才 emit，无法让运行中的暂停按钮及时可用；观察者异常被吞掉，不影响任务执行。
 - `control-bridge` 把 control 结果的 `paused/pauseRequested/verdict` 透传给 UI，且 `runWithRoute` 的 `opts.onTask` 由 bridge 转发给 `run()`。
 - 端到端验收：`tools/v2-pause-browser-test.js` 用真实 headless Chrome + 本地 HTTP + CDP 真点击暂停与继续，15/15 PASS；门控慢工具是确定性夹具，真实工具可中断边界仍见第一节与 R-01/R-02。
+
+### 跨标签页暂停广播（R-08）
+
+```
+运行页 A: run() 执行中，每步标记 running 后 onStepStarted → persist（落盘运行态）
+其他页 B: pause(taskId)
+  ├─ 写 pauseRequestedAt + task.pause_requested（CAS）
+  ├─ BroadcastChannel('astrum.control.pause').postMessage({type:'pause-request', taskId, at})
+  └─ 返回 PAUSE_REQUESTED（不谎称已暂停）
+
+运行页 A: 接收端收到广播
+  ├─ abortActive(taskId, 'pause') → 在飞步骤立即中止（加速收尾）
+  └─ 批次边界持久化确认 pausedAt + step.paused + task.paused → PAUSED
+
+无 BroadcastChannel（Node/旧浏览器）：不创建通道，退化批次边界轮询；行为等价，不伪造跨页保证。
+persist 遇 STALE_WRITE：取最新 revision、吸收对端 pauseRequestedAt 后重试一次，避免暂停请求被运行页覆盖。
+```
+
+- 广播只用于「加速收尾」，权威 `PAUSED` 始终由持有活跃运行的页面在安全边界持久化确认。
+- 验证：`tools/v2-cross-tab-pause-test.js` 14/14 PASS（双页沙箱 + 互联假 BroadcastChannel + 共享 store；含无 BC 退化场景）。
 
 ## 八、未改变的部分
 
