@@ -3806,6 +3806,47 @@
       ac.abort();
     });
 
+    /* R-07：运行中暂停控件。taskId 由 Control 的 onTask 尽早给出，
+     * 点击后调用真实 AstroControl.pause()，状态来自 pause() 返回值与真实事件。 */
+    var pauseBtn = null;
+    var runningTaskId = null;
+    var pausedUi = false;
+    if (window.AstroControlBridge && typeof window.AstroControlBridge.pause === 'function') {
+      pauseBtn = el('button', 'btn-ghost', L('暂停'));
+      pauseBtn.type = 'button';
+      pauseBtn.style.marginLeft = '10px';
+      pauseBtn.disabled = true; /* 拿到 taskId 前不可点，避免空点击 */
+      think.appendChild(pauseBtn);
+      pauseBtn.addEventListener('click', function () {
+        if (!runningTaskId || pausedUi) return;
+        pauseBtn.disabled = true;
+        pauseBtn.textContent = L('暂停请求已发出');
+        if (label) label.textContent = L('正在暂停，等待安全边界');
+        window.AstroControlBridge.pause(runningTaskId, { store: store }).then(function (pr) {
+          if (pr && (pr.paused || pr.verdict === 'PAUSED')) {
+            pausedUi = true;
+            pauseBtn.textContent = L('已暂停');
+            if (label) label.textContent = L('已暂停');
+            return;
+          }
+          if (pr && (pr.pauseRequested || pr.verdict === 'PAUSE_REQUESTED')) {
+            pauseBtn.textContent = L('暂停请求已发出');
+            if (label) label.textContent = L('等待暂停生效');
+            return;
+          }
+          /* 拒绝/失败：允许重试并如实提示。 */
+          pauseBtn.disabled = false;
+          pauseBtn.textContent = L('暂停');
+          if (label) label.textContent = L('研究任务执行中');
+          toast(L((pr && pr.error) || 'PAUSE_FAILED'));
+        }).catch(function () {
+          pauseBtn.disabled = false;
+          pauseBtn.textContent = L('暂停');
+          toast(L('PAUSE_FAILED'));
+        });
+      });
+    }
+
     var store = null;
     var activeProject = window.AstroProjectUI && window.AstroProjectUI.current
       ? window.AstroProjectUI.current() : null;
@@ -3847,6 +3888,13 @@
       else if (ev.type === 'plan.expanded') label = '追加定向检索';
       else if (ev.type === 'task.replanned') label = '重规划';
       else if (ev.type === 'task.cancelled') label = '已取消';
+      else if (ev.type === 'task.pause_requested') label = L('暂停请求已发出');
+      else if (ev.type === 'step.paused') label = L('步骤已停在安全边界');
+      else if (ev.type === 'task.paused') {
+        label = L('已暂停');
+        pausedUi = true;
+        if (pauseBtn) { pauseBtn.textContent = L('已暂停'); pauseBtn.disabled = true; }
+      }
       if (!label) return;
       stepMarks[key] = label;
       var lines = Object.keys(stepMarks).slice(-6).map(function (k) { return stepMarks[k]; });
@@ -3869,11 +3917,24 @@
       fulltext: info.route.mode === 'research',
       researchLoop: info.route.mode === 'research',
       onEvent: onEvent,
+      onTask: function (id) {
+        runningTaskId = id;
+        if (pauseBtn) pauseBtn.disabled = false; /* 拿到真实任务 id 后才允许暂停 */
+      },
       forceCompare: state.settings.mode === 'compare'
     }).then(function (r) {
       taskEnd(tAgent, r && r.cancelled ? new Error('cancelled') : null);
       if (!r) { fail(L('研究任务未能完成，未生成结论。')); return; }
       if (r.cancelled) { fail(L('任务已取消；已完成步骤不会作为结论使用。')); return; }
+      /* R-07：暂停是预期收尾，不是失败。如实呈现已暂停/请求态，
+       * 任务仍可恢复（刷新后由 offerResumeTask 提供继续入口）。 */
+      if (r.paused || r.pauseRequested || r.verdict === 'PAUSED') {
+        think.remove(); busy(false);
+        pausedUi = true;
+        toast(L('任务已暂停，可从任务列表继续'));
+        if (typeof offerResumeTask === 'function') offerResumeTask();
+        return;
+      }
       if (!r.answer) { fail(L('研究任务未能完成，未生成结论。缺失数据不会被当作事实。')); return; }
       r.answer.query = q;
       bumpStat('ask', r.answer.intent || info.intent);

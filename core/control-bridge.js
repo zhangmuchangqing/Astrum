@@ -205,6 +205,7 @@
       network: opts.network == null ? true : !!opts.network,
       maxReplans: opts.maxReplans,
       onEvent: opts.onEvent,
+      onTask: opts.onTask,
       adapter: opts.adapter,
       registry: opts.registry,
       attachmentsEvidence: opts.attachmentsEvidence || null,
@@ -219,6 +220,8 @@
       control: result,
       cancelled: !!result.cancelled,
       verdict: result.verdict,
+      paused: !!result.paused,
+      pauseRequested: !!result.pauseRequested,
       store: store
     };
   }
@@ -246,6 +249,23 @@
     return r;
   }
 
+  /* R-07：把暂停请求透传给 AstroControl.pause()，供运行中 UI 使用。 */
+  async function pause(taskId, opts) {
+    opts = opts || {};
+    if (!root.AstroControl || !root.AstroControl.pause) {
+      return { state: null, verdict: 'DENIED', error: 'NOT_SUPPORTED', paused: false };
+    }
+    var principal = opts.principal || (root.Security && root.Security.makePrincipal
+      ? root.Security.makePrincipal({ agentId: opts.agentId || 'muse' })
+      : null);
+    if (opts.store && principal && typeof opts.store.ownerProfileId === 'function' &&
+      opts.store.ownerProfileId() && opts.store.ownerProfileId() !== principal.profileId) {
+      return { state: null, verdict: 'DENIED', error: 'PROFILE_MISMATCH', paused: false };
+    }
+    var store = opts.store != null ? opts.store : (root.AstroTaskStore ? root.AstroTaskStore.create({}) : null);
+    return root.AstroControl.pause(taskId, { store: store, principal: principal });
+  }
+
   /* R-03：把恢复人工确认动作透传给 AstroControl。 */
   async function confirmRecovery(taskId, stepId, decision, opts) {
     opts = opts || {};
@@ -271,6 +291,7 @@
     run: run,
     runWithRoute: runWithRoute,
     resume: resume,
+    pause: pause,
     confirmRecovery: confirmRecovery,
     modelGenerate: modelGenerate,
     modelStream: modelStream,

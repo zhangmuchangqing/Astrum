@@ -154,13 +154,13 @@
 | 文件 | 内容 |
 |---|---|
 | `core/orchestrator.js` | withTimeout 真取消、abort 三字段、取消分类、不支持取消的安全边界、暂停请求不再分发、provenance 上下文/Profile、executionId/idempotencyKey/外部回执 |
-| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记；R-03：新增 `confirmRecovery` 显式确认动作（rerun/reuse/abandon，授权+CAS+事件） |
+| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记；R-03：新增 `confirmRecovery` 显式确认动作（rerun/reuse/abandon，授权+CAS+事件）；R-07：`run()` 新增 `onTask(id, state)` 观察者，让运行中 UI 尽早拿到真实 taskId（异常不影响任务） |
 | `core/recovery.js` | 复用上下文校验、UNKNOWN 验证失败转人工确认、非幂等副作用保护、外部回执校验、confirm 策略；R-03：尊重 `recoveryConfirmation` 人工决策（复用不翻转、rerun 一次性标记），导出 `resetForRerun` |
 | `core/tool-gateway.js` | 向工具透传 executionId/idempotencyKey |
 | `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验；R-03：新增 `task.recovery_confirmed` 事件类型 |
 | `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested`；R-04：localStorage 后端 read-compare-write 包进 Web Locks（owner 命名空间锁名），健康信息暴露 `crossTabAtomic/lockMode`，锁回调异常转 rejection 保证释放 |
-| `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl` |
-| `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口 |
+| `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl`；R-07：新增 `pause(taskId, opts)`（含 principal/store 与 profile 归属校验）、透传 `onTask`、透传控制结果 `paused/pauseRequested/verdict` |
+| `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口；R-07：`controlAnswer()` 运行中 UI 新增「暂停」按钮并接入真实 `AstroControl.pause()`，按时序呈现 `PAUSE_REQUESTED → PAUSED`，消费暂停事件，暂停收尾不作为失败 |
 | `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露；R-01/R-02：`evidence.search`/`paper.search`/`llm.compose` 改 `abortable:true`，检索链路透传 `runtime.signal`，取消/暂停映射 `pendingAbort + pause + abortCode` |
 | `core/sources.js` | R-01/R-02：`searchMany → callEndpoint → withRetry → fetchJSON → fetch` 全链路贯穿 signal；取消后不再发起请求、不重试、不计入熔断 |
 | `tools/fake-idb.js` | 模拟真实 IndexedDB readwrite 串行隔离 |
@@ -175,6 +175,7 @@
 | `tools/v2-abortable-tools-test.js` | 新增（R-01/R-02）：signal 贯穿 fetch、预取消零请求、在飞取消、暂停/取消语义、全文链路、compose 预取消 |
 | `tools/v2-recovery-confirmation-test.js` | 新增（R-03）：rerun/reuse/abandon、状态迁移、事件、重复恢复、权限/CAS、bridge 透传 |
 | `tools/v2-localstorage-cas-test.js` | 新增（R-04）：Web Locks 跨标签 CAS、并发恰一成功、不同任务互不抹除、无锁降级标记、owner 隔离、锁异常释放 |
+| `tools/v2-pause-browser-test.js` | 新增（R-07）：真实 headless Chrome + 本地 HTTP + CDP，注入可中止门控慢工具；真点击「暂停」→ PAUSE_REQUESTED → PAUSED、持久化事件/abortCode、刷新后真点击「继续任务」恢复；15/15 PASS |
 
 ## 四、接口与兼容性
 
@@ -185,6 +186,7 @@
 - 恢复策略新增 `confirm`，属于对旧 `block` 的收紧：未知凭证失败从“阻塞但不改步骤状态”改为“等待人工确认”，避免任务静默完成。
 - R-03：`confirmRecovery` 为新增 API，旧调用方不传 decision 时行为不变；`recoveryConfirmation` 为可选 provenance 字段，旧任务无此字段时仍走原自动推导；新增 `task.recovery_confirmed` 事件类型不改变既有事件语义。
 - R-04：`getHealth()` 新增 `crossTabAtomic/lockMode` 只读字段，不改变既有字段语义；Web Locks 为浏览器原生能力，不新增依赖；无 Web Locks 时行为与修复前一致（单上下文同步原子段）。
+- R-07：`run()/runWithRoute()` 的 `opts` 新增可选 `onTask(id, state)` 观察者，不传时行为完全不变；`control-bridge` 新增 `pause()` 导出并透传 `paused/pauseRequested`，旧调用方读取结果原有字段不受影响；UI 新增暂停按钮属于新增入口，不改变取消/恢复既有流程。E2E 使用零依赖 headless Chrome，不新增 npm 依赖。
 - 工具注册新增字段，不重构注册表；未声明工具按“不支持取消 + 有副作用风险”保守处理。
 - 未修改 Security、Principal、Profile 分库和 ToolGateway 授权链。
 

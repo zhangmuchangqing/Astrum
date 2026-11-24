@@ -195,7 +195,31 @@ db.transaction([tasks, events, checkpoints, meta], 'readwrite')
 - 恢复 `confirm` 不删除原结果，只改变步骤状态与错误说明，保留证据链。
 - 检查点仍由 `checkpointCriticalSteps` 生成；关键步骤成功/暂停/恢复时写入，恢复用最新检查点校验。
 
-## 七、未改变的部分
+## 七、暂停 UI 控制链（R-07）
+
+```
+controlAnswer() 运行中 UI
+  ├─ onTask(id, state)                       // run() 尽早回调，拿到真实 taskId
+  │    └─ 拿到 id 前「暂停」按钮 disabled
+  ├─ 真点击「暂停」
+  │    └─ AstroControlBridge.pause(taskId, { store })   // principal/store + profile 归属校验
+  │         └─ AstroControl.pause(taskId, { store, principal })
+  │              ├─ 写 pauseRequestedAt + task.pause_requested（跨标签页场景）
+  │              └─ abortActive(taskId, 'pause')（同标签页在飞运行）
+  ├─ onEvent 消费真实事件
+  │    ├─ task.pause_requested → 「暂停请求已发出」
+  │    ├─ step.paused         → 「步骤已停在安全边界」
+  │    └─ task.paused         → 「已暂停」
+  └─ run() 以 paused/pauseRequested 收尾（不作为失败）
+       └─ 刷新后 offerResumeTask() 卡片标注「已暂停」→「继续任务」→ 恢复链路
+```
+
+- UI 不提前写状态、不伪造 `PAUSED`：`PAUSE_REQUESTED` 与 `PAUSED` 的文案分别来自 `pause()` 返回值和真实事件/持久化状态。
+- taskId 由 `onTask` 观察者提供而非 `onEvent`：`onEvent` 要等批次/终态才 emit，无法让运行中的暂停按钮及时可用；观察者异常被吞掉，不影响任务执行。
+- `control-bridge` 把 control 结果的 `paused/pauseRequested/verdict` 透传给 UI，且 `runWithRoute` 的 `opts.onTask` 由 bridge 转发给 `run()`。
+- 端到端验收：`tools/v2-pause-browser-test.js` 用真实 headless Chrome + 本地 HTTP + CDP 真点击暂停与继续，15/15 PASS；门控慢工具是确定性夹具，真实工具可中断边界仍见第一节与 R-01/R-02。
+
+## 八、未改变的部分
 
 - 所有工具仍经 `AstroToolGateway`，所有任务仍经 `AstroControl`。
 - Principal、Security 授权模型、Profile 分库逻辑未改。

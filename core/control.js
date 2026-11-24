@@ -404,6 +404,12 @@
       };
     }
 
+    /* R-07：把真实任务 id 尽早交给调用方，UI 据此把暂停按钮接到 pause()。
+     * onEvent 要等批次/终态才 emit，不能用于早期获取 id。观察者异常不阻断任务。 */
+    if (typeof opts.onTask === 'function') {
+      try { opts.onTask(state.id, state); } catch (e) { /* ignore */ }
+    }
+
     T.transition(state, 'EXECUTE');
     /* B2：本次运行持有可中止控制器，pause() 可立即中止在飞请求。
      * activeRuns / makeRunController / runSignalOf / releaseRun 均定义在本文件顶部。 */

@@ -60,10 +60,12 @@
 
 ## R-07 阶段 B 暂停流程未做浏览器端到端点击验收
 
-- 事实：当前 UI 没有把暂停控件接到 `AstroControl.pause()`；本阶段未修改无关 UI。
-- 影响：`PAUSE_REQUESTED → PAUSED` 的 UI 呈现只通过状态字段与单元/联合测试验证，未做真实浏览器点击。
-- 已做：`task-store.summarize()` 暴露 `paused / pauseRequested / waitingApproval`，与真实状态同源；`p4-browser-test.js` 覆盖刷新/恢复。
-- 未做：新增暂停按钮和浏览器 E2E；会超出“不修改无关 UI”的约束。
+- 状态：**已修复（2026-11-24 补充）**。
+- 已修复：`AstroControlBridge.pause(taskId, opts)` 暴露真实 `AstroControl.pause()`，携带 principal 与 store，含 profile 归属校验；`AstroControl.run()` 新增 `onTask(id, state)` 观察者，让运行中 UI 在 `onEvent` 发出之前就拿到真实 taskId（观察者异常不阻断任务）。
+- 已修复：`controlAnswer()` 在「取消」旁新增「暂停」按钮：拿到 taskId 前禁用，点击后呈现 `PAUSE_REQUESTED` 语义（「暂停请求已发出」/「等待暂停生效」），不提前谎称已暂停；在 `onEvent` 消费 `task.pause_requested / step.paused / task.paused` 更新真实状态；run 以 `paused/pauseRequested` 收尾时不作为失败，刷新后由恢复卡片提供继续入口。
+- 已验证：`tools/v2-pause-browser-test.js` **15/15 PASS**（真实 headless Chrome + 本地 HTTP + CDP，注入可中止门控慢工具；真点击「暂停」→ 在飞工具收到 abort → 持久化 `pausedAt`、`task.pause_requested`/`task.paused`、`step.abort.code=PAUSE_REQUESTED`；刷新后卡片标注「已暂停」并真点击「继续任务」→ `pausedAt` 清除、`task.recovered` 入链）。
+- 已验证：core 回归 `control-test` 86/86、`v2-task-pause-resume-test` 21/21、`v2-recovery-confirmation-test` 17/17、`v2-localstorage-cas-test` 11/11、`v2-abortable-tools-test` 13/13 全绿。
+- 残留边界：门控慢工具是为确定性验收注入的测试夹具，真实工具的可中断性边界仍见 R-01/R-02；跨标签页暂停收尾仍由 R-08 记录。E2E 使用零依赖 headless Chrome，不新增 npm 依赖。
 
 ## R-08 跨标签页暂停请求的收尾依赖运行页
 

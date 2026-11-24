@@ -343,6 +343,16 @@
     '指令执行失败：{0}': 'Command failed: {0}',
     '（距 {0} km）': '({0} km away)',
 
+    /* ---------- R-07：运行中暂停控件的状态呈现 ---------- */
+    '暂停请求已发出': 'Pause requested',
+    '步骤已停在安全边界': 'Step stopped at a safe boundary',
+    '正在暂停，等待安全边界': 'Pausing, waiting for a safe boundary',
+    '等待暂停生效': 'Waiting for pause to take effect',
+    '暂停失败': 'Pause failed',
+    'PAUSE_FAILED': 'Pause failed',
+    '研究任务执行中': 'Research task running',
+    '任务已暂停，可从任务列表继续': 'Task paused. Resume it from the task list',
+
     /* ---------- V2-B0：英文界面残留（skill/project/图层/数据核验） ---------- */
     '人工审批': 'Manual review',
     '扫描提议': 'Scan proposals',

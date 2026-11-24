@@ -106,7 +106,7 @@
 
 13/13 PASS。
 
-**未覆盖**：阶段 B 新增的暂停按钮端到端 UI 点击流程。原因：当前 UI 没有把暂停控件接到 `AstroControl.pause()`；本阶段未修改无关 UI。UI 显示一致性通过 `task-store.summarize()` 的 `paused / pauseRequested / waitingApproval` 字段与真实状态同源来保证，未做浏览器点击验收。
+阶段 B 新增的暂停按钮端到端 UI 点击流程已由 `tools/v2-pause-browser-test.js` 覆盖（15/15 PASS，见第十一节）；`p4-browser-test.js` 仍覆盖刷新/恢复的 IndexedDB 路径。
 
 ## 六、原有回归与解释
 
@@ -207,3 +207,29 @@
 | `tools/control-test.js` | **86/86 PASS** |
 
 结论：localStorage 降级路径在 Web Locks 可用时具备跨标签页原子 CAS，并发保存同一任务恰一成功一 `STALE_WRITE`，不同任务并发保存互不抹除；无 Web Locks 时明确不伪造跨标签保证。memory 后端不跨上下文共享，作为边界保留；跨浏览器/跨设备 CAS 仍需 IDB 或服务端，不在本阶段范围。
+
+## 十一、R-07 修复后的追加验证（2026-11-24）
+
+修复内容：`core/control.js` 的 `run()` 新增 `onTask(id, state)` 观察者，让运行中 UI 在事件批次发出前拿到真实 taskId；`core/control-bridge.js` 暴露 `pause(taskId, opts)`（含 principal/store 与 profile 归属校验）、透传 `onTask`、并把 `paused/pauseRequested` 从 control 结果透传给 UI；`core/app.js` 的 `controlAnswer()` 在「取消」旁新增「暂停」按钮，拿到 taskId 前禁用，点击调用真实 `AstroControl.pause()`，按时序呈现 `PAUSE_REQUESTED → PAUSED`，消费 `task.pause_requested / step.paused / task.paused` 事件，run 以暂停收尾时不作为失败。
+
+**浏览器 E2E（`tools/v2-pause-browser-test.js`，真实 headless Chrome + 本地 HTTP + CDP，零新增 npm 依赖）**：
+
+| 验证点 | 结果 |
+|---|---|
+| 页面启动、暂停桥可用、注入可中止门控慢工具 | PASS |
+| 运行中 UI 出现可用「暂停」按钮（拿到真实 taskId 后可点） | PASS |
+| 门控工具确已进入执行（真实在飞步骤） | PASS |
+| 真点击「暂停」按钮 | PASS |
+| 点击后呈现 `PAUSE_REQUESTED` 语义（不提前谎称已暂停） | PASS |
+| 在飞工具确实收到 abort 并释放 | PASS |
+| 持久化任务 `pausedAt` 存在、`pauseRequestedAt` 已清空 | PASS |
+| 事件链含 `task.pause_requested / step.paused / task.paused` | PASS |
+| 在飞步骤 `abortCode=PAUSE_REQUESTED`（pause 语义由编排层恢复） | PASS |
+| 刷新后卡片标注「已暂停」并提供继续入口 | PASS |
+| 真点击「继续任务」→ `pausedAt` 清除、`task.recovered` 入链、`recoveries=1` | PASS |
+
+合计：**15/15 PASS**。典型实测证据：`abortCodes:["PAUSE_REQUESTED",null,null,null]`；刷新后卡片文案 `1/4 步 · EXECUTE · 已暂停 · 保存于2026-11-24 09:20`；恢复后 `pausedAt:false, pauseRequestedAt:false, recoveries:1`，事件尾 `task.recovered`。
+
+core 回归（本次实跑）：`control-test` **86/86**、`v2-task-pause-resume-test` **21/21**、`v2-recovery-confirmation-test` **17/17**、`v2-localstorage-cas-test` **11/11**、`v2-abortable-tools-test` **13/13**，全部 PASS，工作树无测试污染。i18n 检查（英文模式）：界面残留维持 **27 条**（与改动前基线一致），新增暂停文案均有 `i18n.en-extra.js` 词条，扫描结果中无暂停相关中文残留。
+
+结论：阶段 B 的暂停流程已完成真实浏览器端到端点击验收，`PAUSE_REQUESTED → PAUSED` 的 UI 呈现来自真实状态与真实事件，不伪造 PASS。门控慢工具是确定性验收夹具，真实工具可中断边界仍见 R-01/R-02。
