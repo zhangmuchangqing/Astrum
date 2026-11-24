@@ -181,7 +181,8 @@ db.transaction([tasks, events, checkpoints, meta], 'readwrite')
 - 比较与写入处于同一事务；不再“事务外 get、事务内 put”。
 - 事件与检查点与任务记录同事务写入，避免任务成功而派生记录缺失。
 - 检查点裁剪在提交后执行，失败不影响主记录一致性（最多留下多余检查点）。
-- localStorage/memory 回退：`init()` 后在同一同步段完成读-比较-写，不插入 await；不具备跨标签页原子 CAS，属于降级路径风险。
+- localStorage 回退：整段读-比较-写在 Web Locks（按 owner 命名空间命名的跨上下文互斥锁）内完成，具备跨标签页原子 CAS；并发保存同一任务恰一成功一 `STALE_WRITE`，整张 map 的写也不会抹掉其他标签页并发保存的任务。Web Locks 不可用时退化为单上下文同步段，`getHealth()` 明确标记 `crossTabAtomic=false / lockMode='same-context-only'`，不伪造跨标签保证；锁回调异常统一转 rejection 以保证释放。
+- memory 回退：每个 `create()` 实例独有，不跨上下文共享，不属于跨标签页存储方案；`getHealth().crossTabAtomic=false` 明确标记该边界。跨浏览器/跨设备的真正 CAS 仍需 IDB 或服务端，不在本阶段范围。
 - 错误契约：冲突 `STALE_WRITE`；事务中断/失败 `PERSIST_TX_FAILED`；配额 `QUOTA_EXCEEDED`；记录不存在由读取层返回 `null`，不伪造空记录。
 - 历史：无 `revision` 记录按 1；旧格式状态可直接加载；未传 `expectedRevision` 的旧调用方保留 `updatedAt` 兜底。
 - BroadcastChannel 未作为依赖；所有一致性由事务保证。

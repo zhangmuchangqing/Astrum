@@ -31,10 +31,11 @@
 
 ## R-04 localStorage/memory 回退不具备跨标签页原子 CAS
 
-- 事实：IDB 不可用时回退 localStorage/memory。同一标签页内读-比较-写是同步原子段，但两个标签页各有独立 JS 上下文，无法在 localStorage 上实现真正的 compare-and-swap。
-- 影响：极端降级环境下仍可能出现丢更新。
-- 已做：记录健康信息；IDB 为默认后端；回退路径保持可读可写。
-- 未做：未引入 Web Locks 或额外存储方案（会增加依赖/兼容性复杂度）。
+- 状态：**已修复（2026-11-24 补充）**。
+- 已修复：`core/task-store.js` 的 localStorage 后端把整段 read→compare→write 包进浏览器原生 **Web Locks**（`AstroTaskStore` 实例命名空间锁名），跨标签页互斥，杜绝两标签读到同 revision 后都写入造成的丢更新，包括整张 map 的并发读改写（不同任务互不抹除）。
+- 已修复：Web Locks 不可用时退化为原单上下文同步段，`getHealth()` 明确标记 `crossTabAtomic=false / lockMode='same-context-only'`，不伪造跨标签保证；锁回调异常统一转成 rejection，避免某些实现（如 Node 内置 locks）异常时不释放锁导致后续写入挂起。
+- 已验证：`tools/v2-localstorage-cas-test.js` 11/11（并发 CAS 恰一成功一 STALE_WRITE、不同任务互不抹除、无锁降级标记、owner 命名空间隔离、锁异常释放）。
+- 残留边界：memory 后端为每个 `create()` 实例独有，不跨上下文共享，本就不是跨标签页存储方案；`getHealth().crossTabAtomic=false` 明确标记。跨浏览器/跨设备的真正 CAS 仍需 IDB 或服务端，不在本范围。
 
 ## R-05 非幂等/外部副作用的判定仍依赖工具声明
 

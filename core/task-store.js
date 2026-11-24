@@ -53,6 +53,35 @@
     return e;
   }
 
+  /* ---------------- R-04：跨标签页互斥（Web Locks） ----------------
+   * localStorage 是跨上下文共享的；同一段 read→compare→write 在单标签页内
+   * 因 JS 单线程而原子，但两个标签页各有独立 JS 上下文，仍可能同时读到
+   * 同一 revision 后都写入，造成丢更新。Web Locks 是浏览器原生的跨上下文
+   * 互斥原语；这里把整段受保护的写操作放进锁内。无 Web Locks 时退化为原
+   * 同步段，并通过 health 明确标记 crossTabAtomic=false，不伪造跨标签保证。
+   */
+  function webLocks() {
+    var nav = root.navigator || (typeof navigator !== 'undefined' ? navigator : null);
+    if (!nav || !nav.locks || typeof nav.locks.request !== 'function') return null;
+    return nav.locks;
+  }
+
+  /* 在互斥锁内运行同步临界区；返回 Promise<result>。
+   * name 由存储命名空间派生，避免不同 Profile/DB 互相阻塞。 */
+  function withStoreLock(name, fn) {
+    var locks = webLocks();
+    if (!locks) {
+      try { return Promise.resolve(fn()); } catch (e) { return Promise.reject(e); }
+    }
+    /* 回调内不得向外抛异常：某些 Web Locks 实现（如 Node 的进程内实现）
+     * 在回调抛错时不会释放锁，导致后续写入全部挂起。这里把异常转成
+     * rejection，由调用方处理，同时保证锁正常释放。浏览器规范也会释放，
+     * 但统一处理更稳健。 */
+    return locks.request(name, function () {
+      try { return fn(); } catch (e) { return Promise.reject(e); }
+    });
+  }
+
   function isQuota(err) {
     if (!err) return false;
     return err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED' || err.code === 22;
@@ -390,6 +419,9 @@
     var memory = {};
     var initPromise = null;
     var health = { lastError: null, lastSaveAt: null, lastMigration: null };
+    /* R-04：localStorage 的跨标签页原子性取决于 Web Locks 是否可用。 */
+    var lockName = 'astrum.tasks:' + lsKey;
+    var hasLocks = !!webLocks();
 
     function init() {
       if (initPromise) return initPromise;
@@ -587,7 +619,12 @@
         id = await txSaveGuarded(state, opts);
         /* P4-04：每个任务默认保留最近 20 个检查点，避免派生记录无限增长。 */
         await pruneCheckpoints(state.id, CP_KEEP).catch(function () { return 0; });
+      } else if (backend === 'ls') {
+        /* R-04：整段 read→compare→write 在跨标签互斥锁内完成。
+         * 无 Web Locks 时 withStoreLock 退化为同步段（同标签页仍原子）。 */
+        id = await withStoreLock(lockName, function () { return saveLocal(state, opts); });
       } else {
+        /* memory 后端每个 create() 实例独有，不跨上下文共享；无需锁。 */
         id = saveLocal(state, opts);
       }
       health.lastSaveAt = state.updatedAt || nowIso();
@@ -809,7 +846,11 @@
         backend: backend,
         dbVersion: backend === 'idb' ? DB_VER : null,
         lastError: health.lastError,
-        lastSaveAt: health.lastSaveAt
+        lastSaveAt: health.lastSaveAt,
+        /* R-04：localStorage 后端只有在 Web Locks 可用时才是跨标签页原子的。
+         * IDB 由事务保证；memory 不跨上下文共享。 */
+        crossTabAtomic: backend === 'idb' ? true : (backend === 'ls' ? hasLocks : false),
+        lockMode: backend === 'ls' ? (hasLocks ? 'web-locks' : 'same-context-only') : null
       };
     }
 

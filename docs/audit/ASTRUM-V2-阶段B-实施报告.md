@@ -158,7 +158,7 @@
 | `core/recovery.js` | 复用上下文校验、UNKNOWN 验证失败转人工确认、非幂等副作用保护、外部回执校验、confirm 策略；R-03：尊重 `recoveryConfirmation` 人工决策（复用不翻转、rerun 一次性标记），导出 `resetForRerun` |
 | `core/tool-gateway.js` | 向工具透传 executionId/idempotencyKey |
 | `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验；R-03：新增 `task.recovery_confirmed` 事件类型 |
-| `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested` |
+| `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested`；R-04：localStorage 后端 read-compare-write 包进 Web Locks（owner 命名空间锁名），健康信息暴露 `crossTabAtomic/lockMode`，锁回调异常转 rejection 保证释放 |
 | `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl` |
 | `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口 |
 | `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露；R-01/R-02：`evidence.search`/`paper.search`/`llm.compose` 改 `abortable:true`，检索链路透传 `runtime.signal`，取消/暂停映射 `pendingAbort + pause + abortCode` |
@@ -174,6 +174,7 @@
 | `tools/v2-external-call-recovery-test.js` | 新增：外部调用 executionId/idempotencyKey、回执持久化、远端成功/失败/未知恢复 |
 | `tools/v2-abortable-tools-test.js` | 新增（R-01/R-02）：signal 贯穿 fetch、预取消零请求、在飞取消、暂停/取消语义、全文链路、compose 预取消 |
 | `tools/v2-recovery-confirmation-test.js` | 新增（R-03）：rerun/reuse/abandon、状态迁移、事件、重复恢复、权限/CAS、bridge 透传 |
+| `tools/v2-localstorage-cas-test.js` | 新增（R-04）：Web Locks 跨标签 CAS、并发恰一成功、不同任务互不抹除、无锁降级标记、owner 隔离、锁异常释放 |
 
 ## 四、接口与兼容性
 
@@ -183,6 +184,7 @@
 - `save(state, {expectedRevision})` 保持原签名；不传时保留旧 `updatedAt` 兜底。
 - 恢复策略新增 `confirm`，属于对旧 `block` 的收紧：未知凭证失败从“阻塞但不改步骤状态”改为“等待人工确认”，避免任务静默完成。
 - R-03：`confirmRecovery` 为新增 API，旧调用方不传 decision 时行为不变；`recoveryConfirmation` 为可选 provenance 字段，旧任务无此字段时仍走原自动推导；新增 `task.recovery_confirmed` 事件类型不改变既有事件语义。
+- R-04：`getHealth()` 新增 `crossTabAtomic/lockMode` 只读字段，不改变既有字段语义；Web Locks 为浏览器原生能力，不新增依赖；无 Web Locks 时行为与修复前一致（单上下文同步原子段）。
 - 工具注册新增字段，不重构注册表；未声明工具按“不支持取消 + 有副作用风险”保守处理。
 - 未修改 Security、Principal、Profile 分库和 ToolGateway 授权链。
 

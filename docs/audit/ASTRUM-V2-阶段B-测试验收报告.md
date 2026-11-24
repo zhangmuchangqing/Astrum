@@ -61,8 +61,9 @@
 | `tools/v2-external-call-recovery-test.js` | executionId 唯一、idempotencyKey 跨重试稳定、回执持久化、非幂等外部调用成功复用/失败重跑/未知确认、UNKNOWN 外部回执校验、直接 decide 不绕过 | **12/12 PASS** |
 | `tools/v2-abortable-tools-test.js` | R-01/R-02：工具 abortable 声明、signal 贯穿 fetch、预取消零请求、在飞取消中止 fetch、取消不重试、取消不计入熔断、暂停/用户取消语义、paper 全文 signal、compose 预取消 | **13/13 PASS** |
 | `tools/v2-recovery-confirmation-test.js` | R-03：`rerun/reuse/abandon` 三动作、状态与错误迁移、事件、重复恢复不翻转、rerun 一次性标记、权限拒绝、非法决策、非确认态、CAS 冲突、bridge 透传 | **17/17 PASS** |
+| `tools/v2-localstorage-cas-test.js` | R-04：Web Locks 跨标签互斥、并发 CAS 恰一成功一 STALE、不同任务互不抹除、无锁降级标记、owner 命名空间隔离、锁异常释放 | **11/11 PASS** |
 
-新增合计：**125/125 PASS**。
+新增合计：**136/136 PASS**。
 
 ### 2.4 既有 V2/P3/P4 专项套件
 
@@ -183,3 +184,26 @@
 | 全量 `tools/*test.js` | 核心套件全部 PASS；`geotest.js`、`v1-3-paper-fulltext-test.js`、`v2-sky-01-browser-test.js` 在全量并发中出现偶发失败，单独重跑均 PASS（外部网络/浏览器并发环境性）；provider 相关 `exit=2` 为密钥缺失的预期 `BLOCKED_API_KEY` |
 
 结论：R-03 已从「只有等待状态」闭环为「状态 + 显式动作 + 审计事件 + UI 入口」。确认动作仍以用户判断为最终依据，系统不独立核验远端真实状态（保留 R-06b）；确认入口目前只在恢复卡片，步骤详情面板未单独提供。
+
+## 十、R-04 修复后的追加验证（2026-11-24）
+
+修复内容：`core/task-store.js` 的 localStorage 后端把 read→compare→write 包进 Web Locks（按 owner 命名空间命名锁），Web Locks 不可用时退化为单上下文同步段并在 `getHealth()` 标记 `crossTabAtomic=false / lockMode='same-context-only'`；锁回调异常统一转 rejection 以保证锁释放。
+
+本次实跑结果：
+
+| 套件 | 结果 |
+|---|---|
+| `tools/v2-localstorage-cas-test.js`（新增） | **11/11 PASS** |
+| `tools/v2-multi-tab-concurrency-test.js` | **17/17 PASS** |
+| `tools/v2-occ-test.js` | **8/8 PASS** |
+| `tools/p4-store-test.js` | **34/34 PASS** |
+| `tools/p4-idempotency-test.js` | **18/18 PASS** |
+| `tools/p4-lifecycle-test.js` | **18/18 PASS** |
+| `tools/p4-recovery-test.js` | **28/28 PASS** |
+| `tools/p4-migration-test.js` | **19/19 PASS** |
+| `tools/task-test.js` | **73/73 PASS** |
+| `tools/v2-recovery-confirmation-test.js` | **17/17 PASS** |
+| `tools/v2-idempotency-recovery-test.js` | **16/16 PASS** |
+| `tools/control-test.js` | **86/86 PASS** |
+
+结论：localStorage 降级路径在 Web Locks 可用时具备跨标签页原子 CAS，并发保存同一任务恰一成功一 `STALE_WRITE`，不同任务并发保存互不抹除；无 Web Locks 时明确不伪造跨标签保证。memory 后端不跨上下文共享，作为边界保留；跨浏览器/跨设备 CAS 仍需 IDB 或服务端，不在本阶段范围。
