@@ -11,7 +11,7 @@
 
   root.ASTRUM_DAILY = {
     "updated": "2026-11-24",
-    "generatedAt": "2026-11-24T14:28:43.325Z",
+    "generatedAt": "2026-11-24T14:30:30.947Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
       {
@@ -6654,6 +6654,18 @@
     ],
     "news": [
       {
+        "title": "Ancient rocks from the Moon’s far side rewrite the Solar System’s violent past",
+        "summary": "Scientists studying ancient rocks from the Moon’s far side have uncovered surprising evidence that challenges decades of thinking about the Solar System’s viole…",
+        "source": "ScienceDaily",
+        "date": "2026-11-24",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261121221136.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
+      },
+      {
         "title": "Two monster black holes from the dawn of time defy explanation",
         "summary": "Astronomers have discovered the oldest known compact pair of quasars, powered by two enormous black holes that existed just 900 million years after the Big Bang…",
         "source": "ScienceDaily",
@@ -6663,7 +6675,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-24T10:43:52.960Z"
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
       },
       {
         "title": "A galactic shock wave could rewrite the map of the Milky Way",
@@ -6675,7 +6687,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-24T10:43:52.960Z"
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
       },
       {
         "title": "A mysterious gap hints at black holes born from stars that never exploded",
@@ -6687,7 +6699,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-24T10:43:52.960Z"
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
       },
       {
         "title": "Interstellar solar sails hit a bizarre problem at 75% of light speed",
@@ -6711,7 +6723,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-24T10:43:52.960Z"
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
       },
       {
         "title": "A giant star swallowed another star. James Webb reveals the aftermath",
@@ -6723,7 +6735,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-24T10:43:52.960Z"
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
       },
       {
         "title": "After 8 years in space, a groundbreaking X-ray telescope finally opens its eyes",
@@ -6747,7 +6759,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-24T10:43:52.960Z"
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
       },
       {
         "title": "NASA’s Voyager 1 is now so far away that light takes 24 hours to reach it",
@@ -6759,7 +6771,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-24T10:43:52.960Z"
+        "fetchedAt": "2026-11-24T14:30:30.947Z"
       },
       {
         "title": "Two massive stars may be secretly feeding the Milky Way’s supermassive black hole",
@@ -7362,34 +7374,53 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-24T14:28:43.325Z",
-      "lastSuccessAt": "2026-11-24T10:43:52.960Z",
+      "lastAttemptAt": "2026-11-24T14:30:30.947Z",
+      "lastSuccessAt": "2026-11-24T14:30:30.947Z",
       "newPapers": 0,
       "updatedPapers": 0,
-      "newNews": 0,
+      "newNews": 1,
       "totalPapers": 292,
-      "totalNews": 56,
+      "totalNews": 57,
       "sources": {
-        "papers": [
-          "astro-ph.GA(8)",
-          "astro-ph.CO(8)",
-          "astro-ph.EP(8)",
-          "astro-ph.HE(8)",
-          "astro-ph.SR(8)"
-        ],
+        "papers": [],
         "news": [
           "ScienceDaily(8)"
         ]
       },
       "failures": [
         {
+          "source": "arXiv",
+          "category": "astro-ph.GA",
+          "msg": "HTTP 429 https://export.arxiv.org/api/query?search_query=cat%3Aastro-ph.GA&sortBy=submittedDate&sortOrder=descending&max"
+        },
+        {
+          "source": "arXiv",
+          "category": "astro-ph.CO",
+          "msg": "timeout https://export.arxiv.org/api/query?search_query=cat%3Aastro-ph.CO&sortBy=submittedDate&sortOrder=descending&max_"
+        },
+        {
+          "source": "arXiv",
+          "category": "astro-ph.EP",
+          "msg": "HTTP 429 https://export.arxiv.org/api/query?search_query=cat%3Aastro-ph.EP&sortBy=submittedDate&sortOrder=descending&max"
+        },
+        {
+          "source": "arXiv",
+          "category": "astro-ph.HE",
+          "msg": "timeout https://export.arxiv.org/api/query?search_query=cat%3Aastro-ph.HE&sortBy=submittedDate&sortOrder=descending&max_"
+        },
+        {
+          "source": "arXiv",
+          "category": "astro-ph.SR",
+          "msg": "timeout https://export.arxiv.org/api/query?search_query=cat%3Aastro-ph.SR&sortBy=submittedDate&sortOrder=descending&max_"
+        },
+        {
           "source": "ESA",
           "msg": "HTTP 404 https://www.esa.int/rssfeed/Our_Activities/Space_Science"
         }
       ],
-      "ok": null,
-      "partial": null,
-      "status": "running"
+      "ok": true,
+      "partial": true,
+      "status": "partial"
     }
   };
 })(typeof window !== 'undefined' ? window : this);
