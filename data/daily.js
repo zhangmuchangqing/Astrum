@@ -10,10 +10,462 @@
   'use strict';
 
   root.ASTRUM_DAILY = {
-    "updated": "2026-11-23",
-    "generatedAt": "2026-11-24T10:43:35.958Z",
+    "updated": "2026-11-24",
+    "generatedAt": "2026-11-24T10:43:52.960Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
+      {
+        "id": "2611.30451",
+        "title": "Estimating M Dwarf Ages using their Transiting Brown Dwarf Companions",
+        "authors": [
+          "Aryan Gupta",
+          "Steven Giacalone",
+          "Joshua N. Winn"
+        ],
+        "summary": "Determining M dwarf ages remains challenging because of their slow main-sequence evolution. We investigate using transiting brown dwarfs to constrain system ages through their measured masses and thermal emission. We rep…",
+        "cat": "astro-ph.SR",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T10:42:20Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T10:42:20Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30451",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.30459",
+        "title": "Cross-calibration of Hera/HyperScout-H with MRO/CRISM and MEx/OMEGA based on Mars observations",
+        "authors": [
+          "A. Farina",
+          "M. Popescu",
+          "M. Lazzarin"
+        ],
+        "summary": "On March 12, 2025, Hera, the European Space Agency's planetary defense mission, performed a Mars flyby en route to the asteroid system (65803) Didymos-Dimorphos. During this event, HyperScout-H (HS-H), the spacecraft's h…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T10:49:10Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T10:49:10Z",
+        "doi": "10.1016/j.icarus.2026.117380",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30459",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.30696",
+        "title": "The EX~Lupi Asymmetric Micro-jet Revealed with Spectro-astrometry",
+        "authors": [
+          "A. Unni",
+          "E. T. Whelan",
+          "N. Otten"
+        ],
+        "summary": "EXor variables are a class of young pre-main-sequence stars that show repeated brightenings,likely caused by sudden increases in accretion. Studying their outflow properties, especially during periods of increased activi…",
+        "cat": "astro-ph.SR",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T13:45:00Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T13:45:00Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30696",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.30730",
+        "title": "The system initial mass function of Orion OB1b from probabilistic Gaia DR3 memberships",
+        "authors": [
+          "Rodrigo Cabral",
+          "Juan José Downes",
+          "Rafael Bertolotto-Stefanelli"
+        ],
+        "summary": "[ABRIDGED] Context: Whether the initial mass function (IMF) varies with environment remains a central question in star formation. The multiple populations of Orion OB1b provide an ideal laboratory to test possible IMF va…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T14:12:14Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T14:12:14Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30730",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.30855",
+        "title": "Early Realignment of Eccentric Planetary Orbits without Orbital Decay",
+        "authors": [
+          "Diego J. Muñoz"
+        ],
+        "summary": "Warm Jupiters are, on average, more closely aligned with their host stars than hot Jupiters, even at high eccentricities. The low projected obliquities of eccentric warm Jupiters on the tidal migration track are difficul…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T15:32:14Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T15:32:14Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30855",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.30872",
+        "title": "Joint Flow-Matching Posteriors for Overlapping LISA Galactic Binaries",
+        "authors": [
+          "Davide Sartor",
+          "Giorgio Mentasti"
+        ],
+        "summary": "Laser Interferometer Space Antenna (LISA) will observe millions of galactic binaries (GBs) at once, thousands of them resolvable, with signals that overlap in frequency. Separating them requires a global fit, a joint inf…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T15:42:56Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T15:42:56Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30872",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.30959",
+        "title": "Extragalactic carbon-monoxide (CO) as a CMB foreground: an analytic halo model for the CO auto-spectrum and its correlation with the Cosmic Infrared Background",
+        "authors": [
+          "Giorgia Zagatti",
+          "Marian Douspis",
+          "Giulio Fabbian"
+        ],
+        "summary": "Context. Carbon Monoxide (CO) lines emitted by star-forming galaxies are redshifted into the frequency bands of the Cosmic Microwave Background (CMB) experiments. Their correlation with the Cosmic Infrared Background (CI…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T16:31:28Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T16:31:28Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30959",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.30991",
+        "title": "Preliminary evidence for a Universal Magnetic Field Configuration in Disk-Galaxy Halos with POSSUM",
+        "authors": [
+          "Ioannis Contopoulos",
+          "Ioannis Myserlis",
+          "Shane O'Sullivan"
+        ],
+        "summary": "We use the POSSUM catalog with its high density of background RM sources (30-50 per square degree) to extend previous LOFAR work and investigate the sign of galactic halo magnetic fields. We are searching for the univers…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T16:45:58Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T16:45:58Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.30991",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31041",
+        "title": "Closure of averaged Einstein equations by DESI data",
+        "authors": [
+          "Thomas Buchert"
+        ],
+        "summary": "We benchmark the hypothesis that the redshift dependence of postulated dark energy in the standard model, measured by the DESI collaboration, is a natural outcome of dark energy-free models of structure formation in gene…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T17:12:07Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T17:12:07Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31041",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31057",
+        "title": "Dawn of the Gaia Era: Revisiting Cold Jupiters Orbiting M Dwarfs with Astrometry+Doppler Data Joint Analysis",
+        "authors": [
+          "Yifan Xuan",
+          "Tianjun Gan",
+          "Fabo Feng"
+        ],
+        "summary": "We perform a joint analysis of ground-based radial velocities (RVs), Hipparcos Intermediate Astrometric Data, and two-epoch Gaia astrometry for known M dwarfs hosting cold Jupiters discovered through long-term spectrosco…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T17:19:01Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T17:19:01Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31057",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31069",
+        "title": "A hybrid effective field theory description of diffuse baryons",
+        "authors": [
+          "Ryan Raikman",
+          "Kiyoshi Masui",
+          "James M. Sullivan"
+        ],
+        "summary": "Galaxy feedback mechanisms that displace baryonic gas on large scales are a dominant uncertainty in many cosmological analyses. Measurements that directly probe the baryonic component, such as Fast Radio Burst Dispersion…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T17:24:58Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T17:24:58Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31069",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31130",
+        "title": "The Sensitivity of Gamma-Ray Searches for Dark Matter Annihilation in Milky Way Dwarf Galaxies: the LSST Era and Beyond",
+        "authors": [
+          "Ilumi Chavez",
+          "Aditya Ghosh",
+          "Chris Kelso"
+        ],
+        "summary": "We forecast the sensitivity of gamma-ray searches to dark matter annihilation in Milky Way satellite dwarf galaxies using BabyBison, a Monte Carlo pipeline combining cosmological satellite simulations and observational s…",
+        "cat": "astro-ph.HE",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:03:36Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:03:36Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31130",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31148",
+        "title": "On the effect of a redshift- and metallicity-dependent top-heavy IMF on high-redshift UV luminosity functions",
+        "authors": [
+          "Keita Fukushima",
+          "Shuya Kitagawa",
+          "Akio K. Inoue"
+        ],
+        "summary": "JWST observations have revealed a higher-than-expected abundance of bright galaxies at $z \\gtrsim 10$. Several scenarios have been proposed to explain this excess, one of which invokes a top-heavy stellar initial mass fu…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:17:00Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:17:00Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31148",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31167",
+        "title": "Interpretable morphology-based marked statistics",
+        "authors": [
+          "Federico Semenzato",
+          "Benjamin D. Wandelt",
+          "Michele Liguori"
+        ],
+        "summary": "The shapes and environments of cosmic structures carry cosmological information beyond the matter power spectrum. Recovering this information while retaining a physical understanding is a central challenge for cosmologic…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:28:54Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:28:54Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31167",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31181",
+        "title": "Probabilistic, facility-specific prioritisation of temperate exoplanets for atmospheric characterisation with JWST and the ELT",
+        "authors": [
+          "Effy Viridis"
+        ],
+        "summary": "Deciding which temperate exoplanets to observe first matters for JWST transit spectroscopy and for planned ELT reflected-light instruments, yet signal-to-noise metrics ignore habitability and similarity indices ignore ob…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:36:47Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:36:47Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31181",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31183",
+        "title": "Four consistent estimates of $H_0$ from a $Λ$CDM inference network given CMB data",
+        "authors": [
+          "Gabriel P. Lynch",
+          "Lloyd Knox"
+        ],
+        "summary": "We organize inferences from cosmic microwave background (CMB) data, of the current rate of expansion, $H_0$, into a network whose structure is informed by a scaling symmetry of the Einstein-Boltzmann evolution equations.…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:38:12Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:38:12Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31183",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31204",
+        "title": "JAISP: A Joint Rubin-Euclid Foundation Model for Cross-Instrument Source Detection and Astrometry",
+        "authors": [
+          "Shoubaneh Hemmati",
+          "George Helou",
+          "Yu-Heng Lin"
+        ],
+        "summary": "Joint pixel-level processing of Rubin and Euclid imaging promises deeper source detection and the cross-survey consistency that precision cosmology requires. We introduce JAISP (Joint AI Survey Processing), a foundation…",
+        "cat": "astro-ph.IM",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:51:02Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:51:02Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31204",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31213",
+        "title": "VLT, Keck, and Gemini characterization of the temporarily captured flyby 2026 QQ$_8$",
+        "authors": [
+          "Bryce T. Bolin",
+          "Leo Y. Alcorn",
+          "David J. Tholen"
+        ],
+        "summary": "Very Large Telescope, Keck I, and Gemini North photometry of 2026 QQ$_8$ on November 7-21 gives Sloan Digital Sky Survey-equivalent colors $g-r=0.594^{+0.056}_{-0.053}$, $g-i=0.840^{+0.066}_{-0.065}$, and $i-z=-0.104^{+0…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:55:36Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:55:36Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31213",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31231",
+        "title": "Euclid Data Release 1 (DR1). Learning machine learning: Investigating the complementarity and biases of strong gravitational lens finding networks on Euclid data",
+        "authors": [
+          "Euclid Collaboration",
+          "S. H. Vincken",
+          "N. E. P. Lines"
+        ],
+        "summary": "The Euclid Data Release 1 (DR1) strong lens search presents ECLIPSE, the largest catalogue of strong gravitational lens candidates to date, with >15 000 systems identified across 1900 deg2 of sky. It was constructed usin…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:59:05Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:59:05Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31231",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
+      {
+        "id": "2611.31235",
+        "title": "The Simons Observatory: Analysis of methods for polarization calibration of multiple instruments",
+        "authors": [
+          "The Simons Observatory Collaboration",
+          "Anto I. Lonappan",
+          "Patricia Diego-Palazuelos"
+        ],
+        "summary": "Cosmic birefringence, the rotation of the CMB linear polarization plane across the Universe, is a powerful test of parity-violating physics beyond the Standard Model. Static isotropic rotation, however, is limited by an…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-23",
+        "publishedAt": "2026-11-23T18:59:30Z",
+        "updated": "2026-11-23",
+        "updatedAt": "2026-11-23T18:59:30Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.31235",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-24",
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
+      },
       {
         "id": "2611.27006",
         "title": "Physics-Guided Recursive Self-Improvement of Amortized Bayesian Inference Across Physics",
@@ -6211,7 +6663,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "A galactic shock wave could rewrite the map of the Milky Way",
@@ -6223,7 +6675,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "A mysterious gap hints at black holes born from stars that never exploded",
@@ -6235,7 +6687,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "Interstellar solar sails hit a bizarre problem at 75% of light speed",
@@ -6259,7 +6711,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "A giant star swallowed another star. James Webb reveals the aftermath",
@@ -6271,7 +6723,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "After 8 years in space, a groundbreaking X-ray telescope finally opens its eyes",
@@ -6283,7 +6735,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "NASA's powerful Moon rocket engine roars through a dramatic 200-second test",
@@ -6295,7 +6747,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "NASA’s Voyager 1 is now so far away that light takes 24 hours to reach it",
@@ -6307,7 +6759,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-23T13:55:52.104Z"
+        "fetchedAt": "2026-11-24T10:43:52.960Z"
       },
       {
         "title": "Two massive stars may be secretly feeding the Milky Way’s supermassive black hole",
@@ -6910,12 +7362,12 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-24T10:43:35.958Z",
-      "lastSuccessAt": "2026-11-23T13:55:52.104Z",
-      "newPapers": 0,
+      "lastAttemptAt": "2026-11-24T10:43:52.960Z",
+      "lastSuccessAt": "2026-11-24T10:43:52.960Z",
+      "newPapers": 20,
       "updatedPapers": 0,
       "newNews": 0,
-      "totalPapers": 272,
+      "totalPapers": 292,
       "totalNews": 56,
       "sources": {
         "papers": [
@@ -6935,9 +7387,9 @@
           "msg": "HTTP 404 https://www.esa.int/rssfeed/Our_Activities/Space_Science"
         }
       ],
-      "ok": null,
-      "partial": null,
-      "status": "running"
+      "ok": true,
+      "partial": true,
+      "status": "partial"
     }
   };
 })(typeof window !== 'undefined' ? window : this);
