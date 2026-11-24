@@ -10,10 +10,468 @@
   'use strict';
 
   root.ASTRUM_DAILY = {
-    "updated": "2026-11-22",
-    "generatedAt": "2026-11-22T12:12:07.671Z",
+    "updated": "2026-11-23",
+    "generatedAt": "2026-11-23T13:55:52.104Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
+      {
+        "id": "2611.27006",
+        "title": "Physics-Guided Recursive Self-Improvement of Amortized Bayesian Inference Across Physics",
+        "authors": [
+          "Bo Liang",
+          "Mingtao Chen",
+          "Minghui Du"
+        ],
+        "summary": "Across physics, from the orbits of imaged exoplanets and the matter inside neutron stars to thin films at synchrotrons and cortical neurons, conservation laws, interference, and compensating currents compress the posteri…",
+        "cat": "physics.comp-ph",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T02:36:12Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T02:36:12Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27006",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27069",
+        "title": "Beyond the Peak: Constraining early dark energy with the damping tail",
+        "authors": [
+          "Hao Wang",
+          "Gen Ye",
+          "Yun-Song Piao"
+        ],
+        "summary": "Early dark energy is commonly characterized by the amplitude and location of its primary energy-injection peak. We show that its post-peak evolution, which we call the \\emph{EDE tail}, provides an additional observable p…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T03:37:52Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T03:37:52Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27069",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27151",
+        "title": "Fast and accurate large-volume Lyman-$α$ forest mocks with three-dimensional U-Net trained on IllustrisTNG and FLAMINGO",
+        "authors": [
+          "Bhaskar Arya",
+          "Soumak Maitra",
+          "Shadab Alam"
+        ],
+        "summary": "The Lyman-$α$ forest probes matter structure at $z\\gtrsim2$, constraining baryon acoustic oscillations, neutrino masses, and dark matter properties. Interpreting current and upcoming spectroscopic surveys requires mock c…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T05:33:42Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T05:33:42Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27151",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27228",
+        "title": "Dark Energy Based on Modified Gravity: Where the Future Lies?",
+        "authors": [
+          "Shin'ichi Nojiri",
+          "Sergei D. Odintsov",
+          "V. K. Oikonomou"
+        ],
+        "summary": "Based on current observational data, there is a strong possibility that dark energy was in a phantom regime in the near past, and a transition from a phantom to a quintessential regime may have occurred. Since then, many…",
+        "cat": "gr-qc",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T07:27:04Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T07:27:04Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27228",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27249",
+        "title": "Baryon-Enhanced Strong Lensing Signatures of Self-Interacting Dark Matter Subhalos",
+        "authors": [
+          "Meiwen Yang",
+          "Daneng Yang",
+          "Siyuan Hou"
+        ],
+        "summary": "Self-interacting dark matter (SIDM) is generally expected to suppress subhalo strong lensing through core formation, with subsequent gravothermal collapse potentially enhancing it. We show that compact stars can make a v…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T07:55:24Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T07:55:24Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27249",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27265",
+        "title": "Features investigated: A detailed study of axion monodromy inflation using CLiENT",
+        "authors": [
+          "Steen Hannestad",
+          "Rasmus Lumbye",
+          "Andreas Nygaard"
+        ],
+        "summary": "We investigate features in the primordial power spectrum from inflation, specifically those predicted by the axion monodromy model, using recent observational data. In order to compute posteriors, profile likelihoods and…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T08:04:21Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T08:04:21Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27265",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27551",
+        "title": "WISDOM Project -- XXIX. Catalogue of CO observations of nearby galaxies and the CO Tully-Fisher relation",
+        "authors": [
+          "Pandora Dominiak",
+          "Martin Bureau",
+          "Selçuk Topal"
+        ],
+        "summary": "We present Tully-Fisher relations (TFRs) that use carbon monoxide (CO) as the kinematic tracer and Wide-Field Infrared Survey Explorer (WISE) $W1$-band and Two Micron All Sky Survey (2MASS) $K_\\text{s}$-band magnitudes a…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T12:47:43Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T12:47:43Z",
+        "doi": "10.1093/mnras/stag2196",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27551",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27589",
+        "title": "The GAPS programme at TNG. LXXXIII. Orbital refinement and atmospheric investigation of TOI-1518 b (BD+66 1610 b)",
+        "authors": [
+          "M.",
+          "C. D'Arpa",
+          "F. Biassoni"
+        ],
+        "summary": "TOI-1518 b (BD+66 1610 b) is a highly irradiated ultra-hot Jupiter on a strongly misaligned orbit, a benchmark target for atmospheric and dynamical studies. We comprehensively characterise the TOI-1518 system by refining…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T13:20:41Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T13:20:41Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27589",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27611",
+        "title": "Cosmological Correlators with Triple Massive Exchanges",
+        "authors": [
+          "Shuntaro Aoki",
+          "Lucas Pinol",
+          "Zhehan Qin"
+        ],
+        "summary": "Among all tree-level contributions to the primordial bispectrum, the triple exchange of massive scalars is the most challenging. In this paper we present an analytical formula for this bispectrum in the form of a double…",
+        "cat": "hep-th",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T13:40:59Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T13:40:59Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27611",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27643",
+        "title": "Hints of planet formation in progress around DR Tau from observations with LBT SHARK-NIR and SHARK-VIS",
+        "authors": [
+          "D. Mesa",
+          "G. Li Causi",
+          "R. Gratton"
+        ],
+        "summary": "Protoplanetary disks are the primary sites of planet formation. However, the direct imaging of protoplanets still embedded within their parental disks remains a significant challenge, with only a small number of confirme…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T14:07:01Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T14:07:01Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27643",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27680",
+        "title": "Characterisation of B-type stars in four young Galactic open clusters. II. Photometric variability with TESS and identification of pulsating stars",
+        "authors": [
+          "Federica Nardini",
+          "Dominic M. Bowman",
+          "Julia Bodensteiner"
+        ],
+        "summary": "Pulsations and binarity are important properties of massive stars and influence their structure and evolution. Young open clusters are ideal laboratories to study massive stars, since they are mostly coeval and chemicall…",
+        "cat": "astro-ph.SR",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T14:52:05Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T14:52:05Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27680",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27770",
+        "title": "2026 QQ8: Earth's temporary flyby of maximum lunation",
+        "authors": [
+          "Grigori Fedorets",
+          "Marco Micheli",
+          "Samantha Hemmelgarn"
+        ],
+        "summary": "Aims: On a rare occasion, asteroids are temporarily captured by the Earth to become the planet's interim companions. The discovery of asteroid 2026~QQ$_8$ provided an opportunity to study this class of objects, adding to…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T16:01:10Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T16:01:10Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27770",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27773",
+        "title": "Precise Interstellar Extinction Estimates for Nearly Ten Million Stars Based on Multiple Spectroscopic Surveys",
+        "authors": [
+          "Bao-Kun Sun",
+          "Qiu-Ling Yan",
+          "Qing-Guo"
+        ],
+        "summary": "Accurate interstellar extinction estimates are vital for revealing the intrinsic physical properties of stars and the dynamic structure of the Milky Way. Based on multiple optical and near-infrared spectroscopic surveys…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T16:04:12Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T16:04:12Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27773",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27836",
+        "title": "Carving the Neptunian desert as a function of stellar mass and lifetime XUV irradiation",
+        "authors": [
+          "George W. King",
+          "Ares Osborn",
+          "Kaiming Cui"
+        ],
+        "summary": "The Neptunian desert is a prominent feature in the exoplanet population, thought to arise from both XUV-driven photoevaporation and tidal circularisation following high-eccentricity migration. However, the extent to whic…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T16:54:57Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T16:54:57Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27836",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27856",
+        "title": "Hotter than Little Red Dots: Two Quasars with $T\\sim10^4\\,\\mathrm{K}$ blackbody-like continua at $z\\sim4$",
+        "authors": [
+          "Kristiphong Boonmee",
+          "Kohei Ichikawa",
+          "Yuxing Zhong"
+        ],
+        "summary": "Gas envelope models of Little Red Dots (LRDs) predict a transition from cool ($T\\sim5000\\,\\mathrm{K}$), gas-enshrouded accretion to an exposed quasar, but observational candidates remain scarce. We identify two blackbody…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T17:05:06Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T17:05:06Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27856",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27890",
+        "title": "A TESS Search for Optical Variability in Intermediate-mass Black Hole Candidates",
+        "authors": [
+          "Jinghuai Yao",
+          "Wenwen Zuo",
+          "Hengxiao Guo"
+        ],
+        "summary": "Optical variability of active galactic nuclei (AGNs) probes accretion onto black holes. We study the optical variability of AGNs in the mass range of intermediate-mass black holes (IMBHs, $10^{2-6}\\,M_\\odot$), whose expe…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T17:29:39Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T17:29:39Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27890",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27898",
+        "title": "An early interaction between the Sagittarius dwarf and the Milky Way I: Fossil signatures in the phase-space structure of the disc",
+        "authors": [
+          "Payel Das",
+          "Jason A. S. Hunt"
+        ],
+        "summary": "Several independent lines of evidence point to an early encounter between the Milky Way and the Sagittarius dwarf galaxy $5$-$7$ Gyr ago. We present four controlled $N$-body+hydro simulations, one of an isolated host gal…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T17:38:17Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T17:38:17Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27898",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27952",
+        "title": "Atmospheric parameters and chemical abundances of young stars with APOGEE -- II. Carbon, Nitrogen, Oxygen, and Sulphur abundances in Orion",
+        "authors": [
+          "Ricardo López-Valdivia",
+          "A. Z. Lugo-Aranda",
+          "Sergio Sánchez-Sanjuán"
+        ],
+        "summary": "We derived the abundances of carbon, nitrogen, oxygen, sulphur, and iron in young G-, K-, and M-type stars (effective temperatures of 3500--5900 K) using APOGEE-2 infrared spectra. Our final sample comprises 195 slow rot…",
+        "cat": "astro-ph.SR",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T18:27:19Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T18:27:19Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27952",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27979",
+        "title": "Nearly pristine gas and hard ionizing radiation one billion years after the Big Bang",
+        "authors": [
+          "Takahiro Morishita",
+          "Massimo Stiavelli",
+          "Tommaso Treu"
+        ],
+        "summary": "The first stars formed out of light elements (H, He, and Li leftover from Big Bang Nucleosynthesis) and began the chemical enrichment of the Universe. Identifying this first-generation population of stars, known as Popul…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T18:57:49Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T18:57:49Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27979",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "id": "2611.27986",
+        "title": "Ohmic warm inflation",
+        "authors": [
+          "Anish Ghoshal",
+          "Alessandro Strumia"
+        ],
+        "summary": "We show that Warm Little Inflation is anomalous, lacks a suitable inflaton potential, and cannot sustain the thermal bath, as the quasi-static approximation over-estimated the dissipated power. To address these issues, w…",
+        "cat": "hep-ph",
+        "published": "2026-11-20",
+        "publishedAt": "2026-11-20T18:59:57Z",
+        "updated": "2026-11-20",
+        "updatedAt": "2026-11-20T18:59:57Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.27986",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
       {
         "id": "2611.26008",
         "title": "Fast X-Ray Transients from Dense Circumstellar Material Shock Breakout and Cooling Emission",
@@ -5744,6 +6202,54 @@
     ],
     "news": [
       {
+        "title": "Two monster black holes from the dawn of time defy explanation",
+        "summary": "Astronomers have discovered the oldest known compact pair of quasars, powered by two enormous black holes that existed just 900 million years after the Big Bang…",
+        "source": "ScienceDaily",
+        "date": "2026-11-23",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261122060342.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "title": "A galactic shock wave could rewrite the map of the Milky Way",
+        "summary": "A surprising discovery suggests the Milky Way may be making stars in places where most galaxies cannot. Scientists found evidence that a massive rotating struct…",
+        "source": "ScienceDaily",
+        "date": "2026-11-23",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261122060329.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "title": "A mysterious gap hints at black holes born from stars that never exploded",
+        "summary": "Massive stars may be quietly collapsing into black holes without ever producing the spectacular supernova explosions scientists typically expect. A surprising p…",
+        "source": "ScienceDaily",
+        "date": "2026-11-22",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261121221126.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
+      },
+      {
+        "title": "Interstellar solar sails hit a bizarre problem at 75% of light speed",
+        "summary": "Scientists have discovered a surprising obstacle to interstellar travel: at extreme speeds, the light propelling futuristic solar sails could actually begin slo…",
+        "source": "ScienceDaily",
+        "date": "2026-11-22",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261120071305.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-23",
+        "fetchedAt": "2026-11-23T08:39:50.097Z"
+      },
+      {
         "title": "Time may be far stranger than we realize. Scientists have a way to test it",
         "summary": "Time may be far stranger than we realize, and scientists have proposed a way to detect clocks experiencing multiple flows of time simultaneously. Using atomic c…",
         "source": "ScienceDaily",
@@ -5753,7 +6259,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-22T12:12:07.671Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "A giant star swallowed another star. James Webb reveals the aftermath",
@@ -5765,7 +6271,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-22T12:12:07.671Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "After 8 years in space, a groundbreaking X-ray telescope finally opens its eyes",
@@ -5777,7 +6283,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-22T12:12:07.671Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "NASA's powerful Moon rocket engine roars through a dramatic 200-second test",
@@ -5789,7 +6295,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-22",
-        "fetchedAt": "2026-11-22T12:12:07.671Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "NASA’s Voyager 1 is now so far away that light takes 24 hours to reach it",
@@ -5801,7 +6307,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-22T12:12:07.671Z"
+        "fetchedAt": "2026-11-23T13:55:52.104Z"
       },
       {
         "title": "Two massive stars may be secretly feeding the Milky Way’s supermassive black hole",
@@ -5813,7 +6319,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-21",
-        "fetchedAt": "2026-11-22T12:12:07.671Z"
+        "fetchedAt": "2026-11-23T08:39:50.097Z"
       },
       {
         "title": "Scientists turn Moon dust into LEGO-like bricks for future lunar bases",
@@ -6404,13 +6910,13 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-22T12:12:07.671Z",
-      "lastSuccessAt": "2026-11-22T12:12:07.671Z",
+      "lastAttemptAt": "2026-11-23T13:55:52.104Z",
+      "lastSuccessAt": "2026-11-23T13:55:52.104Z",
       "newPapers": 0,
       "updatedPapers": 20,
-      "newNews": 0,
-      "totalPapers": 252,
-      "totalNews": 52,
+      "newNews": 2,
+      "totalPapers": 272,
+      "totalNews": 56,
       "sources": {
         "papers": [
           "astro-ph.GA(8)",
