@@ -108,10 +108,13 @@ ok
       └─ 失败 → confirm
 failed → 可重试且未超上限 rerun，否则 block
 running/pending/paused/waiting_approval
+ ├─ provenance.recoveryConfirmation 人工决策 → reuse/rerun（一次性，forAttempt 匹配）
  ├─ 已有 recovery_confirmation_required → confirm（保持）
  ├─ 可能副作用且 attempt>0 → confirm(side_effect_state_unknown)
  └─ 其他 → rerun
 ```
+
+R-03 显式确认动作：`AstroControl.confirmRecovery(taskId, stepId, decision)` 提供 `rerun / reuse / abandon`；经 `task.resume` 能力授权与 CAS 事务落盘，追加 `task.recovery_confirmed` 事件。`reuse` 将 `waiting_approval` 恢复为 `ok` 并清错误，`rerun` 走 `resetForRerun` 重置为 pending（授权标记带 `forAttempt`，重跑后自动失效），`abandon` 置为 `blocked` 且错误为 `operator_abandoned`。`AstroControlBridge` 透传，`app.js` 待审批卡片提供对应按钮；该确认只面向 `recovery_confirmation_required`，不与 skill/claim 审批混淆。
 
 复用校验（`validateReuseContext`）：
 

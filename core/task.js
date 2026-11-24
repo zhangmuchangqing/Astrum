@@ -35,7 +35,9 @@
     'step.retry', 'step.cancelled', 'step.paused', 'task.cancelled', 'task.replanned', 'task.recovered',
     'plan.expanded', 'task.paused', 'task.waiting_approval',
     /* V2-B：暂停请求与暂停完成分离；持久化失败必须可追踪。 */
-    'task.pause_requested', 'task.persist_failed'
+    'task.pause_requested', 'task.persist_failed',
+    /* R-03：恢复人工确认动作（重跑 / 复用 / 放弃）。 */
+    'task.recovery_confirmed'
   ];
 
   /* P0-01 §7.1：payload 只存最小上下文 */

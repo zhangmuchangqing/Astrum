@@ -154,11 +154,13 @@
 | 文件 | 内容 |
 |---|---|
 | `core/orchestrator.js` | withTimeout 真取消、abort 三字段、取消分类、不支持取消的安全边界、暂停请求不再分发、provenance 上下文/Profile、executionId/idempotencyKey/外部回执 |
-| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记 |
-| `core/recovery.js` | 复用上下文校验、UNKNOWN 验证失败转人工确认、非幂等副作用保护、外部回执校验、confirm 策略 |
+| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记；R-03：新增 `confirmRecovery` 显式确认动作（rerun/reuse/abandon，授权+CAS+事件） |
+| `core/recovery.js` | 复用上下文校验、UNKNOWN 验证失败转人工确认、非幂等副作用保护、外部回执校验、confirm 策略；R-03：尊重 `recoveryConfirmation` 人工决策（复用不翻转、rerun 一次性标记），导出 `resetForRerun` |
 | `core/tool-gateway.js` | 向工具透传 executionId/idempotencyKey |
-| `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验 |
+| `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验；R-03：新增 `task.recovery_confirmed` 事件类型 |
 | `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested` |
+| `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl` |
+| `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口 |
 | `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露；R-01/R-02：`evidence.search`/`paper.search`/`llm.compose` 改 `abortable:true`，检索链路透传 `runtime.signal`，取消/暂停映射 `pendingAbort + pause + abortCode` |
 | `core/sources.js` | R-01/R-02：`searchMany → callEndpoint → withRetry → fetchJSON → fetch` 全链路贯穿 signal；取消后不再发起请求、不重试、不计入熔断 |
 | `tools/fake-idb.js` | 模拟真实 IndexedDB readwrite 串行隔离 |
@@ -171,6 +173,7 @@
 | `tools/v2-b-joint-test.js` | 新增：跨模块联合测试 |
 | `tools/v2-external-call-recovery-test.js` | 新增：外部调用 executionId/idempotencyKey、回执持久化、远端成功/失败/未知恢复 |
 | `tools/v2-abortable-tools-test.js` | 新增（R-01/R-02）：signal 贯穿 fetch、预取消零请求、在飞取消、暂停/取消语义、全文链路、compose 预取消 |
+| `tools/v2-recovery-confirmation-test.js` | 新增（R-03）：rerun/reuse/abandon、状态迁移、事件、重复恢复、权限/CAS、bridge 透传 |
 
 ## 四、接口与兼容性
 
@@ -179,6 +182,7 @@
 - 错误对象仅新增字段，不改既有 `errorName` 含义。
 - `save(state, {expectedRevision})` 保持原签名；不传时保留旧 `updatedAt` 兜底。
 - 恢复策略新增 `confirm`，属于对旧 `block` 的收紧：未知凭证失败从“阻塞但不改步骤状态”改为“等待人工确认”，避免任务静默完成。
+- R-03：`confirmRecovery` 为新增 API，旧调用方不传 decision 时行为不变；`recoveryConfirmation` 为可选 provenance 字段，旧任务无此字段时仍走原自动推导；新增 `task.recovery_confirmed` 事件类型不改变既有事件语义。
 - 工具注册新增字段，不重构注册表；未声明工具按“不支持取消 + 有副作用风险”保守处理。
 - 未修改 Security、Principal、Profile 分库和 ToolGateway 授权链。
 

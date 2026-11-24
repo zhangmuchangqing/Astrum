@@ -21,10 +21,13 @@
 
 ## R-03 恢复人工确认只有状态，没有完整审批动作
 
-- 事实：`confirm` 将步骤置为 `waiting_approval` 并写 `error.kind='recovery_confirmation_required'`，`resume` 会保持该状态。
-- 影响：系统不会自动重跑或复用，但当前没有专门的“确认已核验 / 授权重跑 / 放弃”入口来清除该状态；用户可能只能通过既有审批或人工处理。
-- 已做：阻止任务静默完成，错误语义可追踪。
-- 未做：新增恢复确认 API/UI 会扩大本阶段范围，未实施。
+- 状态：**已修复（2026-11-24 补充）**。
+- 已修复：`AstroControl.confirmRecovery(taskId, stepId, decision)` 提供 `rerun / reuse / abandon` 三个显式动作，经 `task.resume` 能力授权、CAS 事务落盘并追加 `task.recovery_confirmed` 事件。
+- 已修复：`AstroRecovery.decide()` 以 `provenance.recoveryConfirmation` 短路自动推导：人工确认复用不会被重复恢复翻回确认；`rerun` 标记带 `forAttempt`，超过该 attempt 后自动失效。
+- 已修复：`reuse` 把步骤从 `waiting_approval` 恢复为 `ok` 并清错误；`rerun` 走 `resetForRerun` 重置为 pending；`abandon` 置为 `blocked` 且错误改为 `operator_abandoned`，任务不静默完成。
+- 已修复：`AstroControlBridge.confirmRecovery()` 透传动作；UI 待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑 / 确认复用 / 放弃该步」入口，只针对恢复确认，不与 skill/claim 审批混淆。
+- 已验证：`tools/v2-recovery-confirmation-test.js` 17/17；权限拒绝、CAS 冲突、非法决策、非确认态、重复恢复均覆盖。
+- 残留：确认动作是「用户判断已核验」的人工出口，系统不独立核验远端真实状态（见 R-06b）；确认入口目前只在恢复卡片，步骤详情面板未单独提供。
 
 ## R-04 localStorage/memory 回退不具备跨标签页原子 CAS
 

@@ -246,12 +246,32 @@
     return r;
   }
 
+  /* R-03：把恢复人工确认动作透传给 AstroControl。 */
+  async function confirmRecovery(taskId, stepId, decision, opts) {
+    opts = opts || {};
+    if (!root.AstroControl || !root.AstroControl.confirmRecovery) {
+      return { state: null, verdict: 'DENIED', error: 'NOT_SUPPORTED', confirmed: false };
+    }
+    var principal = opts.principal || (root.Security && root.Security.makePrincipal
+      ? root.Security.makePrincipal({ agentId: opts.agentId || 'muse' })
+      : null);
+    if (opts.store && principal && typeof opts.store.ownerProfileId === 'function' &&
+      opts.store.ownerProfileId() && opts.store.ownerProfileId() !== principal.profileId) {
+      return { state: null, verdict: 'DENIED', error: 'PROFILE_MISMATCH', confirmed: false };
+    }
+    var store = opts.store != null ? opts.store : (root.AstroTaskStore ? root.AstroTaskStore.create({}) : null);
+    return root.AstroControl.confirmRecovery(taskId, stepId, decision, {
+      store: store, principal: principal
+    });
+  }
+
   root.AstroControlBridge = {
     classify: classify,
     canControl: canControl,
     run: run,
     runWithRoute: runWithRoute,
     resume: resume,
+    confirmRecovery: confirmRecovery,
     modelGenerate: modelGenerate,
     modelStream: modelStream,
     version: '1.6.0'

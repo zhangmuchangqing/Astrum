@@ -314,6 +314,11 @@
     return { ok: true };
   }
 
+  function stepHasConfirmation(step, decision) {
+    var c = step && step.provenance && step.provenance.recoveryConfirmation;
+    return !!(c && c.decision === decision && c.forAttempt === step.attempt);
+  }
+
   /* ASTRUM-004：非幂等且可能有外部副作用时，不自动重跑，进入人工确认。 */
   function confirmDecision(reason) {
     return { strategy: 'confirm', reason: reason, requiresConfirmation: true };
@@ -343,6 +348,18 @@
     var ps = planStepById(state, step.id);
     var status = step.status;
     var cOpts = decisionOptions(state, opts);
+
+    /* 人工已确认的恢复动作优先于自动推导，避免重复恢复把决策翻转。
+     * forAttempt 使重跑标记在 attempt 前进后自动失效；复用标记因 attempt 不变而持续生效。 */
+    var confirmation = step.provenance && step.provenance.recoveryConfirmation;
+    if (confirmation && confirmation.forAttempt === step.attempt) {
+      if (confirmation.decision === 'reuse' && step.result != null && step.result.ok !== false) {
+        return { strategy: 'reuse', reason: 'operator_confirmed_reuse' };
+      }
+      if (confirmation.decision === 'rerun') {
+        return { strategy: 'rerun', reason: 'operator_confirmed_rerun' };
+      }
+    }
 
     if (status === 'ok') {
       var want = ps ? T.computeInputHash(ps.args || {}) : null;
@@ -414,7 +431,8 @@
       return { strategy: 'block', reason: 'not_retriable' };
     }
 
-    /* 已进入恢复人工确认的步骤必须保持确认态，不能因重复恢复被翻回重跑。 */
+    /* 已进入恢复人工确认的步骤必须保持确认态，不能因重复恢复被翻回重跑。
+     * 人工复用/重跑确认已在函数开头短路；此处只处理未确认的等待态。 */
     if (status === 'waiting_approval' && step.error &&
       step.error.kind === 'recovery_confirmation_required') {
       return confirmDecision(step.error.message || 'recovery_confirmation_required');
@@ -473,6 +491,12 @@
     stepsOf(state).forEach(function (s) {
       var d = decide(state, s, registry, now, input);
       if (d.strategy === 'reuse') {
+        /* 显式确认复用后，等待态必须回到 ok，使步骤不再被 ready() 阻塞。 */
+        if (s.status === 'waiting_approval' && stepHasConfirmation(s, 'reuse') &&
+          s.result != null && s.result.ok !== false) {
+          s.status = 'ok';
+          s.error = null;
+        }
         out.applied.reuse.push(s.id);
       } else if (d.strategy === 'rerun') {
         resetForRerun(s);
@@ -498,6 +522,8 @@
     plan: plan,
     apply: apply,
     decide: decide,
+    resetForRerun: resetForRerun,
+    stepHasConfirmation: stepHasConfirmation,
     /* 供 Resume 显式 opt-in：默认未知幂等性阻塞。 */
     canReuseUnknown: function (input) {
       return !!(input && input.reuseUnknown === true);

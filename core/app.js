@@ -8419,6 +8419,10 @@
           var steps = Array.isArray(st.steps) ? st.steps : [];
           var done = steps.filter(function (s) { return s.status === 'ok'; }).length;
           var waiting = steps.some(function (s) { return s.status === 'waiting_approval'; });
+          var confirmSteps = steps.filter(function (s) {
+            return s && s.status === 'waiting_approval' && s.error &&
+              s.error.kind === 'recovery_confirmation_required';
+          });
           var metaText = done + '/' + steps.length + ' 步 · ' + (st.phase || '');
           if (waiting) metaText += ' · ' + L('待审批');
           else if (item.meta.paused) metaText += ' · ' + L('已暂停');
@@ -8452,6 +8456,47 @@
           });
           row.appendChild(btn);
           card.appendChild(row);
+
+          /* R-03：恢复确认动作入口。仅对外部调用等需人工核验的步骤显示，
+           * 避免与 skill/claim 审批混淆。 */
+          if (confirmSteps.length && window.AstroControlBridge.confirmRecovery) {
+            confirmSteps.forEach(function (s) {
+              var line = el('div', 'resume-row');
+              var label = el('span', 'resume-q', esc(
+                L('步骤待确认') + '：' + (s.title || s.tool || s.id || '') +
+                (s.error && s.error.message ? ' — ' + esc(s.error.message) : '')
+              ));
+              line.appendChild(label);
+              [
+                { key: 'rerun', label: L('授权重跑') },
+                { key: 'reuse', label: L('确认复用') },
+                { key: 'abandon', label: L('放弃该步') }
+              ].forEach(function (a) {
+                var b = el('button', 'btn-ghost', a.label);
+                b.type = 'button';
+                b.addEventListener('click', function () {
+                  b.disabled = true;
+                  window.AstroControlBridge.confirmRecovery(
+                    item.meta.id, s.id, a.key, { store: store }
+                  ).then(function (r) {
+                    if (!r || !r.confirmed) {
+                      b.disabled = false;
+                      toast(L((r && r.error) || 'CONFIRM_FAILED'));
+                      return;
+                    }
+                    line.remove();
+                    if (a.key === 'reuse' && !card.querySelector('.resume-row')) box.remove();
+                    toast(L('已记录确认：') + a.label);
+                  }).catch(function () {
+                    b.disabled = false;
+                    toast(L('CONFIRM_FAILED'));
+                  });
+                });
+                line.appendChild(b);
+              });
+              card.appendChild(line);
+            });
+          }
         });
         box.appendChild(card);
         var th = $('#thread');

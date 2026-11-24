@@ -60,8 +60,9 @@
 | `tools/v2-b-joint-test.js` | 超时+暂停、暂停+多标签、恢复+幂等、取消+持久化失败、运行中暂停两阶段 | **12/12 PASS** |
 | `tools/v2-external-call-recovery-test.js` | executionId 唯一、idempotencyKey 跨重试稳定、回执持久化、非幂等外部调用成功复用/失败重跑/未知确认、UNKNOWN 外部回执校验、直接 decide 不绕过 | **12/12 PASS** |
 | `tools/v2-abortable-tools-test.js` | R-01/R-02：工具 abortable 声明、signal 贯穿 fetch、预取消零请求、在飞取消中止 fetch、取消不重试、取消不计入熔断、暂停/用户取消语义、paper 全文 signal、compose 预取消 | **13/13 PASS** |
+| `tools/v2-recovery-confirmation-test.js` | R-03：`rerun/reuse/abandon` 三动作、状态与错误迁移、事件、重复恢复不翻转、rerun 一次性标记、权限拒绝、非法决策、非确认态、CAS 冲突、bridge 透传 | **17/17 PASS** |
 
-新增合计：**108/108 PASS**。
+新增合计：**125/125 PASS**。
 
 ### 2.4 既有 V2/P3/P4 专项套件
 
@@ -157,3 +158,28 @@
 | `tools/selftest.js` | **156/157**，1 条失败为 `ip locate chain works`：本机直连 `ipwho.is` 失败（网络层拒绝），与本次改动无关；其余 156 条通过 |
 
 结论：R-01/R-02 中「网络检索与合成链路可中断」部分已闭环；`kepler.*`、`kb.lookup`、`fits.parse`、`compare.curate`、`compose.*` 等本地同步计算仍为固有边界，已在剩余风险清单中保留说明。
+
+## 九、R-03 修复后的追加验证（2026-11-24）
+
+修复内容：`core/recovery.js` 尊重 `provenance.recoveryConfirmation` 人工决策并避免重复恢复翻转；`core/task.js` 新增 `task.recovery_confirmed` 事件；`core/control.js` 新增 `confirmRecovery(taskId, stepId, decision)`（`rerun/reuse/abandon`，经 `task.resume` 授权、CAS 落盘、追加事件）；`core/control-bridge.js` 透传；`core/app.js` 待审批卡片增加确认动作按钮。
+
+本次实跑结果：
+
+| 套件 | 结果 |
+|---|---|
+| `tools/v2-recovery-confirmation-test.js`（新增） | **17/17 PASS** |
+| `tools/v2-idempotency-recovery-test.js` | **16/16 PASS** |
+| `tools/v2-recovery-idempotency-test.js` | **11/11 PASS** |
+| `tools/v2-b-joint-test.js` | **12/12 PASS** |
+| `tools/v2-external-call-recovery-test.js` | **12/12 PASS** |
+| `tools/v2-abortable-tools-test.js` | **13/13 PASS** |
+| `tools/v2-timeout-abort-test.js` | **17/17 PASS** |
+| `tools/v2-task-pause-resume-test.js` | **21/21 PASS** |
+| `tools/v2-multi-tab-concurrency-test.js` | **17/17 PASS** |
+| `tools/p4-idempotency-test.js` | **18/18 PASS** |
+| `tools/control-test.js` | **86/86 PASS** |
+| `tools/p0-security-test.js` | **38/38 PASS** |
+| `tools/p3-executor-test.js` | **17/17 PASS** |
+| 全量 `tools/*test.js` | 核心套件全部 PASS；`geotest.js`、`v1-3-paper-fulltext-test.js`、`v2-sky-01-browser-test.js` 在全量并发中出现偶发失败，单独重跑均 PASS（外部网络/浏览器并发环境性）；provider 相关 `exit=2` 为密钥缺失的预期 `BLOCKED_API_KEY` |
+
+结论：R-03 已从「只有等待状态」闭环为「状态 + 显式动作 + 审计事件 + UI 入口」。确认动作仍以用户判断为最终依据，系统不独立核验远端真实状态（保留 R-06b）；确认入口目前只在恢复卡片，步骤详情面板未单独提供。

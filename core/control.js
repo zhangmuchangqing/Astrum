@@ -881,6 +881,105 @@
     };
   }
 
+  /* R-03：恢复人工确认动作。waiting_approval 不再只有状态：
+   * rerun  = 显式授权重跑（重置步骤，attempt+1 前一次性生效）
+   * reuse  = 显式确认远端结果可复用（回到 ok，resume 不再翻转）
+   * abandon= 放弃该步骤（标记 blocked，任务不静默完成）
+   * 仅处理 recovery_confirmation_required，避免误动 skill/claim 审批。 */
+  async function confirmRecovery(taskId, stepId, decision, opts) {
+    opts = opts || {};
+    var T = root.AstroTask;
+    var Rec = root.AstroRecovery;
+    if (!T || !Rec) return null;
+    if (['rerun', 'reuse', 'abandon'].indexOf(decision) < 0) {
+      return { verdict: 'DENIED', error: 'INVALID_DECISION', confirmed: false };
+    }
+    var principal = principalOf(opts);
+    var loaded = await load(taskId, Object.assign({}, opts, { principal: principal }));
+    if (!loaded || !loaded.state) return null;
+
+    if (principal) {
+      var d = authorized(principal, 'resume', {
+        id: taskId, ownerProfileId: loaded.ownerProfileId, projectId: loaded.projectId
+      });
+      if (!d.allowed) {
+        return { state: loaded.state, verdict: 'DENIED', error: d.reason, confirmed: false };
+      }
+      if (!root.Security.ensureSession(principal).allowed) {
+        return { state: loaded.state, verdict: 'DENIED', error: 'SESSION_CHANGED', confirmed: false };
+      }
+    }
+    if (T.isTerminal(loaded.state.phase)) {
+      return { state: loaded.state, verdict: 'VIEW_ONLY', error: 'TASK_TERMINAL', confirmed: false };
+    }
+    if (activeState(taskId)) {
+      return { state: loaded.state, verdict: 'DENIED', error: 'TASK_RUNNING', confirmed: false };
+    }
+
+    var state = loaded.state;
+    var step = null;
+    (state.steps || []).forEach(function (s) { if (s && s.id === stepId) step = s; });
+    if (!step) {
+      return { state: state, verdict: 'DENIED', error: 'STEP_NOT_FOUND', confirmed: false };
+    }
+    if (step.status !== 'waiting_approval' || !step.error ||
+      step.error.kind !== 'recovery_confirmation_required') {
+      return { state: state, verdict: 'DENIED', error: 'NOT_AWAITING_RECOVERY', confirmed: false };
+    }
+
+    var reason = String(step.error.message || 'recovery_confirmation_required');
+    step.provenance = step.provenance || {};
+    step.provenance.recoveryConfirmation = {
+      decision: decision,
+      forAttempt: step.attempt,
+      reason: reason,
+      at: new Date().toISOString(),
+      by: principal && principal.profileId ? principal.profileId : null
+    };
+
+    if (decision === 'rerun') {
+      Rec.resetForRerun(step);
+    } else if (decision === 'reuse') {
+      if (step.result == null || step.result.ok === false) {
+        return { state: state, verdict: 'DENIED', error: 'NO_REUSABLE_RESULT', confirmed: false };
+      }
+      step.status = 'ok';
+      step.error = null;
+    } else {
+      step.status = 'blocked';
+      step.error = {
+        kind: 'operator_abandoned',
+        message: reason,
+        retriable: false
+      };
+    }
+    T.appendEvent(state, 'task.recovery_confirmed', {
+      action: decision, reason: reason
+    }, stepId);
+
+    var store = opts.store || defaultStore();
+    try {
+      await saveState(store, state, principal, {
+        expectedRevision: loaded.revision, rethrow: true
+      });
+    } catch (e) {
+      return {
+        state: state, verdict: 'PERSIST_FAILED', confirmed: false,
+        error: (e && e.code) || 'PERSIST_TX_FAILED'
+      };
+    }
+    if (root.AuditLog) {
+      root.AuditLog.record({
+        action: 'task.confirm_recovery', resourceType: 'task', resourceId: taskId,
+        projectId: state.projectId || null, decision: 'allow', reason: decision
+      });
+    }
+    return {
+      state: state, verdict: 'CONFIRMED', confirmed: true,
+      decision: decision, stepId: stepId, resumable: loaded.resumable
+    };
+  }
+
   async function resume(taskId, ctx, cfg, opts) {
     opts = opts || {};
     var T = root.AstroTask;
@@ -1172,6 +1271,7 @@
     run: run,
     load: load,
     pause: pause,
+    confirmRecovery: confirmRecovery,
     resume: resume,
     contextOf: contextOf,
     successfulStepResults: successfulStepResults,
