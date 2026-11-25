@@ -11,7 +11,7 @@
 
   root.ASTRUM_DAILY = {
     "updated": "2026-11-25",
-    "generatedAt": "2026-11-25T13:47:14.796Z",
+    "generatedAt": "2026-11-25T13:47:31.547Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
       {
@@ -35,7 +35,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32356",
@@ -58,7 +58,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32592",
@@ -81,7 +81,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32613",
@@ -104,7 +104,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32656",
@@ -127,7 +127,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32753",
@@ -150,7 +150,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32787",
@@ -172,7 +172,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32808",
@@ -195,7 +195,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32831",
@@ -218,7 +218,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32856",
@@ -241,7 +241,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32857",
@@ -264,7 +264,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32861",
@@ -286,7 +286,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32905",
@@ -309,7 +309,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32906",
@@ -332,7 +332,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32925",
@@ -353,7 +353,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.32950",
@@ -376,7 +376,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.33002",
@@ -397,7 +397,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.33083",
@@ -420,7 +420,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.33092",
@@ -443,7 +443,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.33142",
@@ -466,7 +466,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "id": "2611.30451",
@@ -7108,6 +7108,42 @@
     ],
     "news": [
       {
+        "title": "A space telescope hunting for dark matter just discovered something unexpected",
+        "summary": "ESA’s Euclid space telescope has discovered its first previously unknown comet, despite being designed to study distant galaxies and the mysteries of the dark U…",
+        "source": "ScienceDaily",
+        "date": "2026-11-25",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261124055852.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-25",
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
+      },
+      {
+        "title": "Physicists trap antimatter in a breakthrough that could explain why the universe exists",
+        "summary": "Positrons are the antimatter counterpart of an electron. Physicists trapped a positron and cooled it to temperatures near absolute zero. Positron is suspended i…",
+        "source": "ScienceDaily",
+        "date": "2026-11-25",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261124055849.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-25",
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
+      },
+      {
+        "title": "Physicists just sent an unblockable message through a brick wall using gravity",
+        "summary": "Scientists have successfully transmitted a message through a brick wall using nothing but gravity, an old elevator, and an incredibly sensitive detector. By mov…",
+        "source": "ScienceDaily",
+        "date": "2026-11-25",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261123005343.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-25",
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
+      },
+      {
         "title": "A black hole the size of an atom could destroy an entire star",
         "summary": "MIT scientists have discovered that tiny black holes left over from the Big Bang could slowly devour stars from within, eventually triggering spectacular explos…",
         "source": "ScienceDaily",
@@ -7117,7 +7153,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "title": "Ancient rocks from the Moon’s far side rewrite the Solar System’s violent past",
@@ -7129,7 +7165,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-24",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "title": "Two monster black holes from the dawn of time defy explanation",
@@ -7141,7 +7177,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "title": "A galactic shock wave could rewrite the map of the Milky Way",
@@ -7153,7 +7189,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "title": "A mysterious gap hints at black holes born from stars that never exploded",
@@ -7165,7 +7201,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-25T09:38:31.971Z"
+        "fetchedAt": "2026-11-25T13:47:31.547Z"
       },
       {
         "title": "Interstellar solar sails hit a bizarre problem at 75% of light speed",
@@ -7840,13 +7876,13 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-25T13:47:14.796Z",
-      "lastSuccessAt": "2026-11-25T09:38:31.971Z",
+      "lastAttemptAt": "2026-11-25T13:47:31.547Z",
+      "lastSuccessAt": "2026-11-25T13:47:31.547Z",
       "newPapers": 0,
-      "updatedPapers": 0,
-      "newNews": 0,
+      "updatedPapers": 20,
+      "newNews": 3,
       "totalPapers": 312,
-      "totalNews": 58,
+      "totalNews": 61,
       "sources": {
         "papers": [
           "astro-ph.GA(8)",
@@ -7865,9 +7901,9 @@
           "msg": "HTTP 404 https://www.esa.int/rssfeed/Our_Activities/Space_Science"
         }
       ],
-      "ok": null,
-      "partial": null,
-      "status": "running"
+      "ok": true,
+      "partial": true,
+      "status": "partial"
     }
   };
 })(typeof window !== 'undefined' ? window : this);
