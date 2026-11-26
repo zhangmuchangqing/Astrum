@@ -10,10 +10,461 @@
   'use strict';
 
   root.ASTRUM_DAILY = {
-    "updated": "2026-11-25",
-    "generatedAt": "2026-11-26T09:14:11.916Z",
+    "updated": "2026-11-26",
+    "generatedAt": "2026-11-26T09:14:33.637Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
+      {
+        "id": "2611.34212",
+        "title": "Small-scale priors for large-scale cosmology: the case of $b_φ$",
+        "authors": [
+          "Mathilde Pinon",
+          "Raul E. Angulo",
+          "Sergio Contreras"
+        ],
+        "summary": "Perturbative descriptions of galaxy clustering introduce free bias parameters that capture the complex physics of galaxy formation. Local primordial non-Gaussianity (PNG), parametrized by $f_{NL}$, induces a scale-depend…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T11:35:46Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T11:35:46Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34212",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34332",
+        "title": "Scaling and Cross-Simulation Generalization of Graph Neural Networks for Cosmic-Web Classification in CAMELS",
+        "authors": [
+          "Kalash Thakkar",
+          "Unnati Shah"
+        ],
+        "summary": "Graph-based methods can classify galaxies by their dark-matter cosmic-web environments, but reliability beyond development simulations remains uncertain. Galaxy-formation models alter tracer populations and spatial distr…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T13:10:54Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T13:10:54Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34332",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34350",
+        "title": "Physical quasar pairs in DESI DR1 as tracers of protoclusters at $z\\approx2$",
+        "authors": [
+          "Martin G. Richiarte",
+          "Diego G. Lambas"
+        ],
+        "summary": "Close pairs of quasars at the same redshift are expected to mark overdense regions that will collapse into galaxy clusters. Earlier work with SDSS found about 2800 such pairs, too few to follow their environment with sep…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T13:19:44Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T13:19:44Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34350",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34405",
+        "title": "Galaxy cluster thermodynamic profiles beyond self-similarity",
+        "authors": [
+          "E. Baraldi",
+          "G. W. Pratt",
+          "E. Pointecouteau"
+        ],
+        "summary": "Galaxy cluster formation is a self-similar and scale-free process of gravitational collapse. However, the thermodynamic properties of the intracluster medium often deviate from self-similar predictions. We investigate th…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T14:03:54Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T14:03:54Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34405",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34439",
+        "title": "Inverted Pendulum in the Sky: Floquet Stabilization of Cosmological Axions",
+        "authors": [
+          "Tokiro Numasawa",
+          "Masahito Yamazaki"
+        ],
+        "summary": "Many cosmological scenarios require a scalar field to sit near the top of its potential, which usually requires a fine-tuned initial condition. We ask whether the hilltop of an axion potential can be dynamically stabiliz…",
+        "cat": "hep-ph",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T14:21:28Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T14:21:28Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34439",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34512",
+        "title": "A Genetic Algorithm Approach to Reconstructing Scalar-Tensor Lagrangians",
+        "authors": [
+          "Mikel Artola",
+          "George Alestas",
+          "Dimitrios Efstratiou"
+        ],
+        "summary": "Recent DESI baryon acoustic oscillation (BAO) data, combined with cosmic microwave background (CMB) and Type Ia supernovae observations, have been interpreted as evidence for dynamical dark energy whose equation of state…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T15:00:59Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T15:00:59Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34512",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34625",
+        "title": "The tangled warp of the Milky Way II: The red clump",
+        "authors": [
+          "James E. Turner",
+          "Paul J. McMillan"
+        ],
+        "summary": "The Milky Way's disc is warped in a way that varies depending on the age of the population considered. We, for the first time, trace that kinematics of the warp in red clumps stars. This means that our sample is drawn fr…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T16:12:10Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T16:12:10Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34625",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34650",
+        "title": "Probing Dynamical Dark Energy with Hyper Suprime-Cam Year 3 Cosmic Shear",
+        "authors": [
+          "Shreya Mukherjee",
+          "Surhud More"
+        ],
+        "summary": "Recent measurements of baryon acoustic oscillations (BAO) and Type Ia Supernovae (SNe) have revealed a preference for a time-evolving dark energy equation of state. Because such dynamical behavior alters both the cosmic…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T16:25:50Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T16:25:50Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34650",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34672",
+        "title": "Signals from the early Universe: primordial features from the full-shape analysis of BOSS galaxies and eBOSS quasars in combination with Planck",
+        "authors": [
+          "Mario Ballardini",
+          "Nicola Barbieri",
+          "Antonio Raffaelli"
+        ],
+        "summary": "We search for primordial oscillatory features using cosmic microwave background (CMB) and large-scale structure (LSS) data, combining \\textit{Planck} Public Release 4 (PR4) with galaxy clustering from the Baryon Oscillat…",
+        "cat": "astro-ph.CO",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T16:37:25Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T16:37:25Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34672",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34691",
+        "title": "First detection of s-cis-acroleine (sc-CH2CHCHO) in the interstellar medium",
+        "authors": [
+          "Germán Molpeceres",
+          "Marcelino Agúndez",
+          "Carlos Cabezas"
+        ],
+        "summary": "We report the first interstellar detection of the higher-energy $s$-cis conformer of acrolein (CH2CHCHO) toward TMC-1 using the Quijote line survey. Local thermodynamic equilibrium modeling, assuming a rotational tempera…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T16:52:07Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T16:52:07Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34691",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34720",
+        "title": "NASA's Pandora SmallSat Mission: Gaussian Processes for Simulated Stellar Heterogeneity Corrections under Imperfect Stellar Models",
+        "authors": [
+          "Zoe Ko",
+          "Peter McGill",
+          "Benjamin V. Rackham"
+        ],
+        "summary": "Stellar contamination is the primary bottleneck limiting robust atmospheric characterization of exoplanets orbiting active K- and M-dwarfs with James Webb Space Telescope (JWST) transmission spectroscopy. Launched in Jan…",
+        "cat": "astro-ph.SR",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T17:09:32Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T17:09:32Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34720",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34743",
+        "title": "Black holes in little red and blue dots drive no superwinds in the first 1.5 billion years",
+        "authors": [
+          "Mainak Singha",
+          "Yurina Nakazato",
+          "Wei Leong Tee"
+        ],
+        "summary": "Galaxy-formation models rely on accreting black holes to expel gas from their hosts. We test this prediction in 67 little red dots (LRDs) and little blue dots (LBDs) in the first 1.5 billion years, selected from 80,367 N…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T17:21:19Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T17:21:19Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34743",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34753",
+        "title": "periapsis: A Comprehensive Orbital Fitting Package",
+        "authors": [
+          "Evan Kerr",
+          "Matthew Whitaker",
+          "Anil Seth"
+        ],
+        "summary": "We introduce a new Python package \\texttt{periapsis}, which computes posterior distributions for a variety of orbital parameters given astrometric and/or radial velocity data. \\texttt{periapsis} not only returns posterio…",
+        "cat": "astro-ph.SR",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T17:26:24Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T17:26:24Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34753",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34775",
+        "title": "State of the UNIONS: Four Milky Way companions discovered in a systematic search for northern Local Group satellites",
+        "authors": [
+          "Simon E. T. Smith",
+          "Alan W. McConnachie",
+          "Thomas de Boer"
+        ],
+        "summary": "We present four newly discovered Milky Way satellites from a systematic search through the $gri$ photometry from the Ultraviolet Near-Infrared Optical Northern Survey (UNIONS). Two of these satellites are likely ultra-fa…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T17:37:22Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T17:37:22Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34775",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34789",
+        "title": "The THESAN-ZOOM project: interpreting candidate Population III-enriched absorption line systems during reionization",
+        "authors": [
+          "Giulia Pruto",
+          "Laura Keating",
+          "Rahul Kannan"
+        ],
+        "summary": "With JWST, metal absorption lines are now being detected at increasingly high redshift, where signatures of the first generation of stars (Population III) may be observable. Interpreting observations of possible Pop III-…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T17:43:16Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T17:43:16Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34789",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34790",
+        "title": "A Bayesian Approach to Prioritizing the Follow-Up of Near-Earth Objects",
+        "authors": [
+          "Devanshi Singh",
+          "Mario Jurić",
+          "Željko Ivezić"
+        ],
+        "summary": "We present pneo, a Bayesian classifier that computes the probability that a single-night tracklet belongs to a near-Earth object (NEO), using only its sky position, angular motion, and apparent magnitude. A tracklet does…",
+        "cat": "astro-ph.IM",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T17:44:16Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T17:44:16Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34790",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34802",
+        "title": "Tipping the scales in Blue Jay: Dust energy balance overpredicts IR luminosity in galaxies at $z\\sim2$",
+        "authors": [
+          "Benjamin P. Collins",
+          "Sirio Belli",
+          "Letizia Bugiani"
+        ],
+        "summary": "The spectral energy distribution (SED) of a galaxy encodes vital information about its chemical composition, stellar populations, and dust content. To model the infrared emission, many modern SED-fitting codes rely on du…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T17:53:50Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T17:53:50Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34802",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34867",
+        "title": "The oxygen cold trap in protoplanetary discs",
+        "authors": [
+          "Peter Woitke"
+        ],
+        "summary": "The diffusive transport of oxygen in protoplanetary discs followed by sequestration into ice in the midplane, a process known as the cold trap, can substantially alter the chemical environment where planets form. This pa…",
+        "cat": "astro-ph.EP",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T18:32:35Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T18:32:35Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34867",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34890",
+        "title": "The Splash population confined to the Milky Way bar region",
+        "authors": [
+          "Aakash Pandey",
+          "Ortwin Gerhard"
+        ],
+        "summary": "We investigate the chemo-dynamical properties of in-situ stars in the Galactic bar region (central $5$ kpc), specifically the inner Galactic counterpart of the solar-neighbourhood Splash population (in situ halo). We use…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T18:46:15Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T18:46:15Z",
+        "doi": "",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34890",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
+        "id": "2611.34910",
+        "title": "A comparison of two- and one-fluid dust solvers for dusty, supersonic turbulence",
+        "authors": [
+          "Narges Vadood",
+          "Terrence S. Tricco"
+        ],
+        "summary": "We model 3 and 10 $μ$m dust grains in supersonic, turbulent molecular cloud conditions to compare two different numerical methods solving dust coupled to gas through a drag term. One method models dust and gas as two sep…",
+        "cat": "astro-ph.GA",
+        "published": "2026-11-25",
+        "publishedAt": "2026-11-25T18:56:18Z",
+        "updated": "2026-11-25",
+        "updatedAt": "2026-11-25T18:56:18Z",
+        "doi": "10.3847/1538-4357/ae9cb9",
+        "source": "arXiv",
+        "url": "https://arxiv.org/abs/2611.34910",
+        "sources": [
+          "arXiv"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
       {
         "id": "2611.32298",
         "title": "Kepler-404: A near-resonant pair of sub-Neptunes. Reinterpreting a false-positive signal with the novel detection method RIVERS.radon",
@@ -7108,6 +7559,18 @@
     ],
     "news": [
       {
+        "title": "Astronomers may have discovered a black hole born before the first stars",
+        "summary": "A mysterious object named Phoebe, detected when it briefly magnified a distant star, could be a primordial black hole formed just after the Big Bang. With an es…",
+        "source": "ScienceDaily",
+        "date": "2026-11-26",
+        "url": "https://www.sciencedaily.com/releases/2026/11/261122060346.htm",
+        "sources": [
+          "ScienceDaily"
+        ],
+        "firstSeen": "2026-11-26",
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
+      },
+      {
         "title": "A space telescope hunting for dark matter just discovered something unexpected",
         "summary": "ESA’s Euclid space telescope has discovered its first previously unknown comet, despite being designed to study distant galaxies and the mysteries of the dark U…",
         "source": "ScienceDaily",
@@ -7117,7 +7580,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T13:47:31.547Z"
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
       },
       {
         "title": "Physicists trap antimatter in a breakthrough that could explain why the universe exists",
@@ -7129,7 +7592,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T13:47:31.547Z"
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
       },
       {
         "title": "Physicists just sent an unblockable message through a brick wall using gravity",
@@ -7141,7 +7604,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T13:47:31.547Z"
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
       },
       {
         "title": "A black hole the size of an atom could destroy an entire star",
@@ -7153,7 +7616,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-25T13:47:31.547Z"
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
       },
       {
         "title": "Ancient rocks from the Moon’s far side rewrite the Solar System’s violent past",
@@ -7165,7 +7628,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-24",
-        "fetchedAt": "2026-11-25T13:47:31.547Z"
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
       },
       {
         "title": "Two monster black holes from the dawn of time defy explanation",
@@ -7177,7 +7640,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-25T13:47:31.547Z"
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
       },
       {
         "title": "A galactic shock wave could rewrite the map of the Milky Way",
@@ -7189,7 +7652,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-25T13:47:31.547Z"
+        "fetchedAt": "2026-11-26T09:14:33.637Z"
       },
       {
         "title": "A mysterious gap hints at black holes born from stars that never exploded",
@@ -7876,13 +8339,13 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-26T09:14:11.916Z",
-      "lastSuccessAt": "2026-11-25T13:47:31.547Z",
-      "newPapers": 0,
+      "lastAttemptAt": "2026-11-26T09:14:33.637Z",
+      "lastSuccessAt": "2026-11-26T09:14:33.637Z",
+      "newPapers": 20,
       "updatedPapers": 0,
-      "newNews": 0,
-      "totalPapers": 312,
-      "totalNews": 61,
+      "newNews": 1,
+      "totalPapers": 332,
+      "totalNews": 62,
       "sources": {
         "papers": [
           "astro-ph.GA(8)",
@@ -7901,9 +8364,9 @@
           "msg": "HTTP 404 https://www.esa.int/rssfeed/Our_Activities/Space_Science"
         }
       ],
-      "ok": null,
-      "partial": null,
-      "status": "running"
+      "ok": true,
+      "partial": true,
+      "status": "partial"
     }
   };
 })(typeof window !== 'undefined' ? window : this);
