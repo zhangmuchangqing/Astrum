@@ -160,7 +160,7 @@
 | 文件 | 说明 |
 |---|---|
 | `tools/v2-sky-2c-perf-cdp.js` | CDP 性能补测驱动（零依赖） |
-| `tools/v2-sky-2c-perf-bench-inline.js` | 页面内基准源码（被注入执行） |
+| `tools/inline/v2-sky-2c-perf-bench-inline.js` | 页面内基准源码（被注入执行） |
 | `tools/v2-sky-2c-texture-eval.js` | 纹理分辨率评估（只写临时目录） |
 | `docs/V2-SKY-阶段2C-性能补测-阶段A审计.md` | 阶段A |
 | `docs/V2-SKY-阶段2C-性能补测报告.md` | 阶段B |

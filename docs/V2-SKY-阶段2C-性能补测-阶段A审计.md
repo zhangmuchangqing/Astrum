@@ -201,7 +201,7 @@ app.js drawSky(canvas, p)
 | 文件 | 用途 | 是否触碰业务 |
 |---|---|---|
 | `tools/v2-sky-2c-perf-cdp.js` | CDP 真实浏览器整帧性能补测（独立脚本，零依赖） | 否 |
-| `tools/v2-sky-2c-perf-bench-inline.js` | 页面内基准函数源码，由 CDP `Runtime.evaluate` 注入执行（不受页面 CSP 限制） | 否 |
+| `tools/inline/v2-sky-2c-perf-bench-inline.js` | 页面内基准函数源码，由 CDP `Runtime.evaluate` 注入执行（不受页面 CSP 限制；置于 `tools/inline/`，不参与 `node --check tools/*.js`） | 否 |
 | `tools/v2-sky-2c-texture-eval.js` | 512×256 vs 1024×512 资源/性能评估（只读源图、只写临时目录） | 否 |
 | `docs/V2-SKY-阶段2C-性能补测-阶段A审计.md` | 本报告 | 否 |
 | `docs/V2-SKY-阶段2C-性能补测报告.md` | 阶段B 结果 | 否 |

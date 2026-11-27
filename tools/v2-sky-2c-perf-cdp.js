@@ -59,7 +59,7 @@ function freePort() {
 function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
 /* 页面内基准脚本：全部计时使用页面真实 performance.now() */
-var BENCH = fs.readFileSync(path.join(__dirname, 'v2-sky-2c-perf-bench-inline.js'), 'utf8');
+var BENCH = fs.readFileSync(path.join(__dirname, 'inline', 'v2-sky-2c-perf-bench-inline.js'), 'utf8');
 
 async function main() {
   var port = await freePort();

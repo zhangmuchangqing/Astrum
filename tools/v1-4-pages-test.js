@@ -283,7 +283,10 @@ function bodyText(file) { return fs.readFileSync(path.join(OUT, file), 'utf8'); 
       version.commitShort + ' dirty=' + String(version.dirty));
     ok('S3.3 脏工作区如实记录', version.dirty === true || version.dirty === false, 'dirty=' + String(version.dirty));
     var bytes = dirSize(OUT);
-    ok('S3.4 发布体积在预算内', bytes > 1000 * 1000 && bytes < 4 * 1024 * 1024, bytes + ' B');
+    /* V2 星空离线贴图为有意引入的发布资源（planet-textures.js 约 846KB、
+     * milkyway-bg.js 约 343KB），预算由 4MB 调整为 5MB，避免每次新增
+     * 离线数据都直接把发布通道卡死；更大的增长仍会被拦截。 */
+    ok('S3.4 发布体积在预算内', bytes > 1000 * 1000 && bytes < 5 * 1024 * 1024, bytes + ' B');
   });
 
   await runCase('H1', '本地 /Astrum/ 子路径 HTTP 与 Chrome', function () {

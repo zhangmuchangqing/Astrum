@@ -178,7 +178,7 @@ A3 + A4 ≈ 27.3 ms，与 A2 的 31.1 ms 差值约 3.8 ms（整帧其余图层�
 
 ## 12. 复用与可重复性
 
-- 脚本：`tools/v2-sky-2c-perf-cdp.js`（CDP 驱动与汇总）+ `tools/v2-sky-2c-perf-bench-inline.js`（页面内基准，被动态注入 `Runtime.evaluate`，不受 CSP 限制）。
+- 脚本：`tools/v2-sky-2c-perf-cdp.js`（CDP 驱动与汇总）+ `tools/inline/v2-sky-2c-perf-bench-inline.js`（页面内基准，被动态注入 `Runtime.evaluate`，不受 CSP 限制）。
 - 运行：`node tools/v2-sky-2c-perf-cdp.js`，零第三方依赖，输出 JSON + 表格。
 - 每次运行自建临时 profile 并清理；不写入仓库资源。
 - 本报告数据取一次完整运行（原始输出保存在系统临时目录），另有一次运行用于交叉核对（D2 p95 34.6 ms、G 系列同样受节流影响）。
