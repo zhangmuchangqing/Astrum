@@ -251,5 +251,8 @@ core 回归（本次实跑）：`control-test` **86/86**、`v2-task-pause-resume
 | `tools/v2-recovery-confirmation-test.js` | **24/24 PASS** | 原 17 项 + R-11 skill/claim 审批不被恢复确认处理、保持原状、无错误码/非等待态被拒、UI 只筛选恢复确认步骤 |
 | `tools/v2-recovery-idempotency-test.js` | **13/13 PASS** | 原 10 项 + R-12 短哈希=unverified、64-hex 不符=hash_mismatch、大写 64-hex 一致可复用 |
 | `tools/v2-idempotency-recovery-test.js` | **16/16 PASS** | 回归：哈希不符进入人工确认且不覆盖原结果 |
+| `tools/v2-pause-timeout-reconcile-test.js` | **21/21 PASS** | 2026-11-27 追加：暂停请求超时收尾——未到时/仍有进展/无请求/已暂停均 noop 不写盘；超时无进展 CAS 收尾为 PAUSED 且步骤回队、事件与检查点齐全；重复收尾幂等；CAS 冲突 contended 且不伪造；再次 pause 接管；本页活跃运行拒绝接管；存活运行页吸收 `pausedAt` 后以暂停收尾、审计链不断 |
+
+**2026-11-27 补充（R-08 残留收口）**：新增 `AstroControl.reconcilePauseRequest()` 超时收尾与 `AstroControlBridge.reconcilePause()` 透传，恢复面板打开时自动接管 `pauseRequested && !paused` 的任务；`persist()` 的 STALE 重试新增吸收 `pausedAt`，避免落后运行页覆盖已收尾的 PAUSED。回归全绿：上述 17 个套件（16 个存量 + 1 个新增）全部 PASS，`tools/selftest.js` 156/157（唯一失败为外网 IP 服务不可达的环境项，与改动无关）。
 
 结论：R-08~R-12 均以真实测试证据通过，不伪造 PASS；R-09/R-10/R-11 为「固化既有刻意设计 + 增强可观测/区分测试」，R-12 为「收紧校验语义」，均未引入破坏性迁移。

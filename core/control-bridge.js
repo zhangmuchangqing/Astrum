@@ -266,6 +266,27 @@
     return root.AstroControl.pause(taskId, { store: store, principal: principal });
   }
 
+  /* R-08 收尾：把暂停请求超时收尾透传给 AstroControl.reconcilePauseRequest()，
+   * 供恢复入口/其他标签页在运行页失联后接管。 */
+  async function reconcilePause(taskId, opts) {
+    opts = opts || {};
+    if (!root.AstroControl || !root.AstroControl.reconcilePauseRequest) {
+      return { action: 'noop', reason: 'NOT_SUPPORTED' };
+    }
+    var principal = opts.principal || (root.Security && root.Security.makePrincipal
+      ? root.Security.makePrincipal({ agentId: opts.agentId || 'muse' })
+      : null);
+    if (opts.store && principal && typeof opts.store.ownerProfileId === 'function' &&
+      opts.store.ownerProfileId() && opts.store.ownerProfileId() !== principal.profileId) {
+      return { action: 'noop', reason: 'PROFILE_MISMATCH' };
+    }
+    var store = opts.store != null ? opts.store : (root.AstroTaskStore ? root.AstroTaskStore.create({}) : null);
+    return root.AstroControl.reconcilePauseRequest(taskId, {
+      store: store, principal: principal,
+      timeoutMs: opts.timeoutMs, now: opts.now
+    });
+  }
+
   /* R-03：把恢复人工确认动作透传给 AstroControl。 */
   async function confirmRecovery(taskId, stepId, decision, opts) {
     opts = opts || {};
@@ -292,9 +313,10 @@
     runWithRoute: runWithRoute,
     resume: resume,
     pause: pause,
+    reconcilePause: reconcilePause,
     confirmRecovery: confirmRecovery,
     modelGenerate: modelGenerate,
     modelStream: modelStream,
-    version: '1.6.0'
+    version: '1.7.0'
   };
 })(typeof window !== 'undefined' ? window : global);

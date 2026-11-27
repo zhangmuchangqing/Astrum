@@ -154,13 +154,13 @@
 | 文件 | 内容 |
 |---|---|
 | `core/orchestrator.js` | withTimeout 真取消、abort 三字段、取消分类、不支持取消的安全边界、暂停请求不再分发、provenance 上下文/Profile、executionId/idempotencyKey/外部回执；R-08：步骤标记 `running` 后回调 `onStepStarted`，使运行态及时落盘（异常不阻断） |
-| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记；R-03：新增 `confirmRecovery` 显式确认动作（rerun/reuse/abandon，授权+CAS+事件）；R-07：`run()` 新增 `onTask(id, state)` 观察者，让运行中 UI 尽早拿到真实 taskId（异常不影响任务）；R-08：新增 `BroadcastChannel('astrum.control.pause')` 跨标签暂停广播（仅浏览器窗口创建），`persist()` 对 `STALE_WRITE` 取最新 revision 并吸收 `pauseRequestedAt` 后重试一次 |
+| `core/control.js` | 暂停两阶段、持久化确认/回滚、取消落盘失败上报、恢复上下文传入、resume 清除暂停标记；R-03：新增 `confirmRecovery` 显式确认动作（rerun/reuse/abandon，授权+CAS+事件）；R-07：`run()` 新增 `onTask(id, state)` 观察者，让运行中 UI 尽早拿到真实 taskId（异常不影响任务）；R-08：新增 `BroadcastChannel('astrum.control.pause')` 跨标签暂停广播（仅浏览器窗口创建），`persist()` 对 `STALE_WRITE` 取最新 revision 并吸收 `pauseRequestedAt` 后重试一次；2026-11-27 新增 `reconcilePauseRequest` 超时收尾（30s 时限 + 无进展判定 + CAS + 冲突回滚），`pause()` 在请求超时后由本页接管，`persist()` 的 STALE 重试吸收 `pausedAt` |
 | `core/recovery.js` | 复用上下文校验、UNKNOWN 验证失败转人工确认、非幂等副作用保护、外部回执校验、confirm 策略；R-03：尊重 `recoveryConfirmation` 人工决策（复用不翻转、rerun 一次性标记），导出 `resetForRerun`；R-12：`validateFidelity` 显式 64-hex 判定（短哈希=unverified、64 位不符=hash_mismatch、大小写不敏感），不迁移/回填历史哈希 |
 | `core/tool-gateway.js` | 向工具透传 executionId/idempotencyKey |
 | `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验；R-03：新增 `task.recovery_confirmed` 事件类型 |
 | `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested`；R-04：localStorage 后端 read-compare-write 包进 Web Locks（owner 命名空间锁名），健康信息暴露 `crossTabAtomic/lockMode`，锁回调异常转 rejection 保证释放；R-09：固化检查点裁剪为提交后独立事务、失败吞掉；R-10：`getHealth()` 暴露 `deprecatedUpdatedAtFallback/updatedAtFallbackUsed/lastUpdatedAtFallbackAt` 并对无 revision 保存记账 |
-| `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl`；R-07：新增 `pause(taskId, opts)`（含 principal/store 与 profile 归属校验）、透传 `onTask`、透传控制结果 `paused/pauseRequested/verdict` |
-| `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口；R-07：`controlAnswer()` 运行中 UI 新增「暂停」按钮并接入真实 `AstroControl.pause()`，按时序呈现 `PAUSE_REQUESTED → PAUSED`，消费暂停事件，暂停收尾不作为失败 |
+| `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl`；R-07：新增 `pause(taskId, opts)`（含 principal/store 与 profile 归属校验）、透传 `onTask`、透传控制结果 `paused/pauseRequested/verdict`；R-08：新增 `reconcilePause()` 透传超时收尾（version 1.7.0） |
+| `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口；R-07：`controlAnswer()` 运行中 UI 新增「暂停」按钮并接入真实 `AstroControl.pause()`，按时序呈现 `PAUSE_REQUESTED → PAUSED`，消费暂停事件，暂停收尾不作为失败；R-08：恢复面板打开时先对 `pauseRequested && !paused` 任务调用 `reconcilePause` 收尾，再渲染列表，已收尾任务显示「已暂停」 |
 | `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露；R-01/R-02：`evidence.search`/`paper.search`/`llm.compose` 改 `abortable:true`，检索链路透传 `runtime.signal`，取消/暂停映射 `pendingAbort + pause + abortCode` |
 | `core/sources.js` | R-01/R-02：`searchMany → callEndpoint → withRetry → fetchJSON → fetch` 全链路贯穿 signal；取消后不再发起请求、不重试、不计入熔断 |
 | `tools/fake-idb.js` | 模拟真实 IndexedDB readwrite 串行隔离 |
@@ -182,6 +182,7 @@
 | `tools/v2-multi-tab-concurrency-test.js` | 扩展（R-10）：新增弃用标记、兜底计数、显式 revision 不计入断言；20/20 PASS |
 | `tools/v2-recovery-confirmation-test.js` | 扩展（R-11）：skill/claim 审批不被恢复确认处理、保持原状、无错误码/非等待态被拒、UI 只筛选恢复确认步骤；24/24 PASS |
 | `tools/v2-recovery-idempotency-test.js` | 扩展（R-12）：短哈希=unverified、64-hex 不符=hash_mismatch、大写 64-hex 一致可复用；13/13 PASS |
+| `tools/v2-pause-timeout-reconcile-test.js` | 新增（R-08 收尾，2026-11-27）：暂停请求超时接管条件矩阵（未到时/仍有进展/无请求/已暂停均 noop）、收尾落盘（步骤回队、事件、检查点）、重复收尾幂等、CAS 冲突回滚不伪造、再次 pause 接管、本页活跃运行拒绝接管、存活运行页吸收 `pausedAt` 不被推翻；21/21 PASS |
 
 ## 四、接口与兼容性
 
@@ -194,6 +195,7 @@
 - R-04：`getHealth()` 新增 `crossTabAtomic/lockMode` 只读字段，不改变既有字段语义；Web Locks 为浏览器原生能力，不新增依赖；无 Web Locks 时行为与修复前一致（单上下文同步原子段）。
 - R-07：`run()/runWithRoute()` 的 `opts` 新增可选 `onTask(id, state)` 观察者，不传时行为完全不变；`control-bridge` 新增 `pause()` 导出并透传 `paused/pauseRequested`，旧调用方读取结果原有字段不受影响；UI 新增暂停按钮属于新增入口，不改变取消/恢复既有流程。E2E 使用零依赖 headless Chrome，不新增 npm 依赖。
 - R-08：`run()` 的 `opts` 新增可选 `onStepStarted` 回调（不传时行为不变）；`BroadcastChannel` 仅在浏览器窗口存在时创建，Node 环境不建；跨页暂停广播失败时仍以批次边界轮询为等价回退，不改变 PAUSED 的权威判定位置。
+- R-08（2026-11-27 补充）：新增 `AstroControl.reconcilePauseRequest(taskId, opts)` 与 `AstroControlBridge.reconcilePause()`（`version` → 1.7.0），旧调用方不受影响；恢复面板打开时对 `pauseRequested && !paused` 任务自动调用收尾，单个失败静默不阻断列表；`persist()` 的 STALE 重试新增吸收 `pausedAt`，不改变 CAS 与 PAUSED 的权威判定位置。
 - R-09：检查点裁剪保持「提交后独立事务、失败吞掉」，不改变权威记录保存语义；仅以测试固化隔离性，未移入主事务。
 - R-10：`getHealth()` 新增 `deprecatedUpdatedAtFallback/updatedAtFallbackUsed/lastUpdatedAtFallbackAt` 只读字段；`save(state)` 不带 `expectedRevision` 仍兼容，不破坏旧调用方。
 - R-11：不新增步骤状态，仅以测试固化 `error.kind` 区分与 UI 入口条件；无接口变更。

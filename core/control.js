@@ -54,6 +54,9 @@
    * 无 BroadcastChannel 时完全退化为批次边界轮询（orchestrator 已实现），行为不变。 */
   var pauseChannel = null;
   var PAUSE_CHANNEL = 'astrum.control.pause';
+  /* R-08 收尾：运行页应在收到暂停请求后的一个批次内确认 pausedAt。
+   * 超过该时限且请求之后没有任何进展迹象，视为运行页已崩溃/关闭。 */
+  var PAUSE_RECONCILE_TIMEOUT_MS = 30 * 1000;
 
   function pauseBus() {
     if (typeof window === 'undefined' || typeof BroadcastChannel !== 'function') return null;
@@ -384,7 +387,13 @@
             var freshRev = rec && typeof rec.revision === 'number' ? rec.revision : null;
             if (freshRev == null) throw e;
             return (rt.store.get ? rt.store.get(state.id) : Promise.resolve(null)).then(function (latest) {
-              if (latest && latest.pauseRequestedAt && !state.pauseRequestedAt) {
+              /* R-08 收尾：若暂停请求已被其他页（或恢复入口）超时收尾，吸收其 pausedAt，
+               * 让本运行在下一个批次边界按已暂停退出，避免旧修订把 PAUSED 覆盖回运行态。 */
+              if (latest && latest.pausedAt && !state.pausedAt && !(T && T.isTerminal(state.phase))) {
+                state.pausedAt = latest.pausedAt;
+                if (state.pauseRequestedAt) state.pauseRequestedAt = null;
+                try { T.appendEvent(state, 'task.paused', { reason: 'pause_timeout' }); } catch (e3) { /* ignore */ }
+              } else if (latest && latest.pauseRequestedAt && !state.pauseRequestedAt) {
                 state.pauseRequestedAt = latest.pauseRequestedAt;
                 try { T.appendEvent(state, 'task.pause_requested', {
                   at: latest.pauseRequestedAt, via: 'cross-tab'
@@ -830,6 +839,117 @@
     }
   }
 
+  /* 最近一次「任务推进」的时间：事件时间与步骤开始/结束时间取最大。
+   * 不含 state.updatedAt——暂停请求自身的落盘也会推进它，会误判为活跃。 */
+  function lastProgressAt(state) {
+    var max = 0;
+    var i, t;
+    var evs = Array.isArray(state.events) ? state.events : [];
+    for (i = 0; i < evs.length; i++) {
+      t = evs[i] && evs[i].at ? Date.parse(evs[i].at) : NaN;
+      if (isFinite(t) && t > max) max = t;
+    }
+    var steps = Array.isArray(state.steps) ? state.steps : [];
+    for (i = 0; i < steps.length; i++) {
+      var s = steps[i] || {};
+      t = s.startedAt ? Date.parse(s.startedAt) : NaN;
+      if (isFinite(t) && t > max) max = t;
+      t = s.endedAt ? Date.parse(s.endedAt) : NaN;
+      if (isFinite(t) && t > max) max = t;
+    }
+    return max;
+  }
+
+  /* R-08 超时收尾：运行页在确认暂停前崩溃/关闭时，pauseRequestedAt 会永久悬空。
+   * 只有同时满足以下条件才接管，避免与仍在推进的运行页竞争：
+   *   1) 本标签页没有该任务的活跃运行；
+   *   2) 请求已超过时限（默认 30s，可用 opts.timeoutMs 调整）；
+   *   3) 请求之后没有任何进展迹象（事件/步骤时间都不晚于请求时间）。
+   * 收尾动作与运行页同源：在飞步骤回队、写 pausedAt、记 task.paused，并经 CAS 落盘；
+   * 冲突（STALE_WRITE）时返回 contended，绝不伪造 PAUSED。 */
+  async function reconcilePauseRequest(taskId, opts) {
+    opts = opts || {};
+    var T = root.AstroTask;
+    var timeoutMs = typeof opts.timeoutMs === 'number' && isFinite(opts.timeoutMs) && opts.timeoutMs >= 0
+      ? opts.timeoutMs : PAUSE_RECONCILE_TIMEOUT_MS;
+    var now = typeof opts.now === 'number' && isFinite(opts.now) ? opts.now : Date.now();
+    var principal = principalOf(opts);
+    var loaded = await load(taskId, Object.assign({}, opts, { principal: principal }));
+    if (!loaded || !loaded.state) return { action: 'noop', reason: 'not_found' };
+    var state = loaded.state;
+    if (state.pausedAt) return { action: 'noop', reason: 'already_paused', state: state };
+    if (!state.pauseRequestedAt) return { action: 'noop', reason: 'not_requested', state: state };
+    if (activeState(taskId)) return { action: 'noop', reason: 'run_active_here', state: state };
+    var reqAt = Date.parse(state.pauseRequestedAt);
+    if (!isFinite(reqAt)) return { action: 'noop', reason: 'invalid_request_time', state: state };
+    var age = now - reqAt;
+    if (age < timeoutMs) {
+      return { action: 'noop', reason: 'within_grace', waitMs: timeoutMs - age, state: state };
+    }
+    if (lastProgressAt(state) > reqAt) {
+      return { action: 'noop', reason: 'recent_activity', state: state };
+    }
+
+    var requestedAt = state.pauseRequestedAt;
+    var evLen = Array.isArray(state.events) ? state.events.length : 0;
+    var reclaimed = 0;
+    var snapshot = [];
+    (state.steps || []).forEach(function (s) {
+      if (!s || (s.status !== 'running' && s.status !== 'paused')) return;
+      snapshot.push({
+        step: s, status: s.status, startedAt: s.startedAt, endedAt: s.endedAt,
+        error: s.error, cancelled: s.cancelled, abort: s.abort
+      });
+      /* 与 orchestrator 的暂停回队保持同一形状，恢复时重新调度。 */
+      s.status = 'pending';
+      s.startedAt = null;
+      s.endedAt = null;
+      s.error = null;
+      s.cancelled = false;
+      s.abort = {
+        requested: true, supported: true, confirmed: false,
+        code: 'PAUSE_REQUESTED', reason: 'pause'
+      };
+      if (T) T.appendEvent(state, 'step.paused', { reason: 'stale_run' }, s.id);
+      reclaimed += 1;
+    });
+    state.pausedAt = new Date(now).toISOString();
+    state.pauseRequestedAt = null;
+    if (T) {
+      T.appendEvent(state, 'task.paused', { reason: 'pause_timeout' });
+      safeCheckpoint(state, { taskStatus: 'PAUSED', paused: true });
+    }
+    var store = opts.store || defaultStore();
+    try {
+      await saveState(store, state, principal, { expectedRevision: loaded.revision, rethrow: true });
+    } catch (e) {
+      /* 回滚内存态，避免把未落盘的 PAUSED 返回给调用方。 */
+      state.pausedAt = null;
+      state.pauseRequestedAt = requestedAt;
+      if (Array.isArray(state.events)) state.events.length = evLen;
+      snapshot.forEach(function (x) {
+        x.step.status = x.status;
+        x.step.startedAt = x.startedAt;
+        x.step.endedAt = x.endedAt;
+        x.step.error = x.error;
+        x.step.cancelled = x.cancelled;
+        x.step.abort = x.abort;
+      });
+      try {
+        if (T) T.appendEvent(state, 'task.persist_failed', { reason: 'pause_reconcile' });
+      } catch (e2) { /* ignore */ }
+      var code = (e && e.code) || 'PERSIST_TX_FAILED';
+      return {
+        action: code === 'STALE_WRITE' ? 'contended' : 'failed',
+        reason: code, error: code, state: state, reclaimedSteps: 0
+      };
+    }
+    return {
+      action: 'finalized', verdict: 'PAUSED', paused: true,
+      state: state, pausedAt: state.pausedAt, reclaimedSteps: reclaimed
+    };
+  }
+
   /* P3/V2-B：暂停请求与暂停完成分离。
    * 1) 写入 pauseRequestedAt 并记录 task.pause_requested；
    * 2) 同标签页活跃运行立即 abort('pause')，在飞步骤回队；
@@ -903,11 +1023,21 @@
         }
         return { state: state, verdict: 'PAUSED', paused: true, already: true };
       }
-      /* 请求已存在且仍有活动步骤：重播通知，加速运行页收尾（幂等）。 */
+      /* 请求已存在且仍有活动步骤：若已超时且无进展迹象，接管收尾（运行页可能已崩溃）。
+       * 未超时或仍有进展则只重播通知，加速运行页收尾（幂等）。 */
+      var takeover = await reconcilePauseRequest(taskId, Object.assign({}, opts, { principal: principal }));
+      if (takeover.action === 'finalized') {
+        return {
+          state: takeover.state, verdict: 'PAUSED', paused: true, already: true,
+          reclaimed: takeover.reclaimedSteps,
+          message: '暂停请求超时未确认，已由本页接管并完成收尾。'
+        };
+      }
       var reAnnounced = announcePause(taskId, state.pauseRequestedAt);
       return {
         state: state, verdict: 'PAUSE_REQUESTED', paused: false,
-        pauseRequested: true, already: true, announced: reAnnounced
+        pauseRequested: true, already: true, announced: reAnnounced,
+        waitMs: takeover.waitMs
       };
     }
 
@@ -1353,6 +1483,7 @@
     run: run,
     load: load,
     pause: pause,
+    reconcilePauseRequest: reconcilePauseRequest,
     confirmRecovery: confirmRecovery,
     resume: resume,
     contextOf: contextOf,

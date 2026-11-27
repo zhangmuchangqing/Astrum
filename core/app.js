@@ -8467,9 +8467,19 @@
     store.init().then(function () { return store.list({ limit: 10 }); }).then(function (list) {
       var hits = (list || []).filter(function (x) { return x.resumable; }).slice(0, 5);
       if (!hits.length) return null;
-      return Promise.all(hits.map(function (h) {
-        return store.get(h.id).then(function (s) { return { meta: h, state: s }; }).catch(function () { return null; });
-      })).then(function (items) {
+      /* R-08 收尾：暂停请求超时仍未被运行页确认（运行页已关闭）时，由恢复入口接管，
+       * 先完成收尾再读取状态，列表里就不会出现永久悬空的「暂停请求」。 */
+      var pendingPause = hits.filter(function (h) { return h.pauseRequested && !h.paused; });
+      var settled = pendingPause.length && typeof window.AstroControlBridge.reconcilePause === 'function'
+        ? Promise.all(pendingPause.map(function (h) {
+            return window.AstroControlBridge.reconcilePause(h.id, { store: store }).catch(function () { return null; });
+          }))
+        : Promise.resolve(null);
+      return settled.then(function () {
+        return Promise.all(hits.map(function (h) {
+          return store.get(h.id).then(function (s) { return { meta: h, state: s }; }).catch(function () { return null; });
+        }));
+      }).then(function (items) {
         items = (items || []).filter(Boolean);
         if (!items.length) return;
         var box = el('div', 'msg bot research-resume');
@@ -8486,7 +8496,7 @@
           });
           var metaText = done + '/' + steps.length + ' 步 · ' + (st.phase || '');
           if (waiting) metaText += ' · ' + L('待审批');
-          else if (item.meta.paused) metaText += ' · ' + L('已暂停');
+          else if (item.meta.paused || (st && st.pausedAt)) metaText += ' · ' + L('已暂停');
           if (item.meta.recoveries) metaText += ' · ' + L('已恢复') + item.meta.recoveries + L('次');
           if (item.meta.updatedAt) {
             var saved = String(item.meta.updatedAt).slice(0, 16).replace('T', ' ');

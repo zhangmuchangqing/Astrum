@@ -249,11 +249,18 @@ controlAnswer() 运行中 UI
   └─ 批次边界持久化确认 pausedAt + step.paused + task.paused → PAUSED
 
 无 BroadcastChannel（Node/旧浏览器）：不创建通道，退化批次边界轮询；行为等价，不伪造跨页保证。
-persist 遇 STALE_WRITE：取最新 revision、吸收对端 pauseRequestedAt 后重试一次，避免暂停请求被运行页覆盖。
+persist 遇 STALE_WRITE：取最新 revision、吸收对端 pauseRequestedAt（若对端已收尾则吸收 pausedAt 并补记 task.paused）后重试一次，避免暂停请求被覆盖或已收尾的 PAUSED 被推翻。
+
+运行页失联（2026-11-27 补充）：reconcilePauseRequest(taskId, {timeoutMs=30000, now})
+  ├─ 前置：本页无活跃运行 && 请求超时 && 请求后无任何进展（事件/步骤时间）
+  ├─ 收尾：running/paused 步骤回队 pending + abort{code:PAUSE_REQUESTED}
+  │        写 pausedAt、清空 pauseRequestedAt、step.paused(stale_run)、task.paused(pause_timeout)、检查点
+  ├─ CAS 落盘；STALE_WRITE → 回滚内存态并返回 contended（绝不伪造 PAUSED）
+  └─ 触发入口：恢复面板打开（Bridge.reconcilePause）、再次 pause()、显式 API
 ```
 
 - 广播只用于「加速收尾」，权威 `PAUSED` 始终由持有活跃运行的页面在安全边界持久化确认。
-- 验证：`tools/v2-cross-tab-pause-test.js` 14/14 PASS（双页沙箱 + 互联假 BroadcastChannel + 共享 store；含无 BC 退化场景）。
+- 验证：`tools/v2-cross-tab-pause-test.js` 14/14 PASS（双页沙箱 + 互联假 BroadcastChannel + 共享 store；含无 BC 退化场景）；`tools/v2-pause-timeout-reconcile-test.js` 21/21 PASS（收尾条件、幂等、CAS 冲突回滚、存活运行页吸收 pausedAt 不被推翻）。
 
 ## 八、未改变的部分
 

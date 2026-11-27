@@ -69,10 +69,17 @@
 
 ## R-08 跨标签页暂停请求的收尾依赖运行页
 
-- 事实：其他标签页运行中时，`pause()` 只持久化 `pauseRequestedAt`，由持有活跃运行的标签页在批次边界确认 `pausedAt`。
-- 影响：若运行页在确认前崩溃/关闭，任务会停留在 `pauseRequestedAt` 状态；`resume` 会清除该请求并继续。
-- 已做：请求态与完成态可区分；恢复不会重复执行已完成步骤。
-- 未做：没有 BroadcastChannel 级联唤醒/超时收尾机制。
+- 状态：**已修复并补齐超时收尾（2026-11-27）**；权威 `PAUSED` 仍由运行页在安全边界确认，广播只做加速收尾。
+- 事实：其他标签页运行中时，`pause()` 先持久化 `pauseRequestedAt`，并尽力通过 `BroadcastChannel('astrum.control.pause')` 通知运行页中止在飞工具；最终 `pausedAt` 仍由持有活跃运行的标签页在批次边界落盘。
+- 影响（原）：若运行页在确认前崩溃/关闭，任务会停留在 `pauseRequestedAt` 状态。
+- 已做（原）：请求态与完成态可区分；恢复不会重复执行已完成步骤。
+- 已做：`core/control.js` 仅在浏览器窗口存在时创建广播通道（Node 不创建，避免进程无法退出），`pause()` 在请求持久化后 `announcePause` 广播任务 id 与时间；`persist()` 对 `STALE_WRITE` 取最新 revision 并吸收 `pauseRequestedAt` 后重试一次，避免跨页竞争丢掉暂停请求。
+- 已做：`core/orchestrator.js` 在步骤标记 `running` 后回调 `onStepStarted`，让运行态及时落盘（回调异常不阻断任务）。
+- 已做（2026-11-27）：`AstroControl.reconcilePauseRequest(taskId, opts)` 超时收尾——仅当「本页无该任务活跃运行 + 请求已超时限（默认 30s，可由 `opts.timeoutMs` 调整）+ 请求之后无任何进展（事件/步骤时间均不晚于请求）」三条同时满足时接管：在飞步骤按运行页同源形状回队为 `pending`、写 `pausedAt`、清空 `pauseRequestedAt`、追加 `step.paused(stale_run)` 与 `task.paused(pause_timeout)` 并生成检查点，经 CAS 落盘；`STALE_WRITE` 返回 `contended` 并回滚内存态，绝不伪造 `PAUSED`。
+- 已做（2026-11-27）：接管入口有三处——恢复面板打开时自动对 `pauseRequested && !paused` 任务调用（`AstroControlBridge.reconcilePause`）、再次点击暂停时、以及直接调用 API；`persist()` 的 STALE 重试新增吸收 `pausedAt`，落后的存活运行页不会把已收尾的 PAUSED 覆盖回运行态，并补记 `task.paused` 保持审计链。
+- 已验证：`tools/v2-cross-tab-pause-test.js` **14/14 PASS**（双标签页沙箱 + 互联假 BroadcastChannel + 共享 store：B 页 pause 广播 → A 页在飞中止、PAUSED 收尾、`pausedAt` 落盘、事件链完整；无 BroadcastChannel 时退化批次边界轮询且不建通道）。
+- 已验证：`tools/v2-pause-timeout-reconcile-test.js` **21/21 PASS**（无请求/已暂停/未到时/仍有进展均 noop 且不写盘；超时无进展收尾为 PAUSED 且步骤回队、事件与检查点齐全；重复收尾幂等；CAS 冲突返回 contended 且状态未被伪造；再次 pause 接管；本页活跃运行拒绝接管；存活运行页吸收 pausedAt 后以暂停收尾、审计链不断）。
+- 残留边界：广播不是一致性保障，通道不可用（Node/旧浏览器）时退化为批次边界轮询；超时收尾不是实时后台定时器，而是在恢复入口/再次暂停/显式 API 时触发，运行页崩溃后最迟在下一次进入恢复入口时被收尾；时限内的 `PAUSED` 权威判定仍只属于运行页。
 
 ## R-09 检查点裁剪在事务提交后执行
 
