@@ -195,6 +195,11 @@
 
     T.transition(state, 'PLAN');
     var plan = null;
+    /* V2 P0-C：Agent Runtime 必须同时满足「显式开关 + 存在可用云模型来源」。
+     * 任一不满足即保持旧模板，确保默认行为与离线环境完全不变。 */
+    var agentRuntimeOn = !!(opts.agentRuntime || root.ASTRUM_AGENT_RUNTIME) &&
+      !!(root.AstroAgentExecutor && root.AstroAgentExecutor.available &&
+        root.AstroAgentExecutor.available());
     try {
       plan = Planner.plan({
         query: q,
@@ -206,7 +211,8 @@
         registry: opts.registry || null,
         capabilities: opts.capabilities || (opts.registry && opts.registry.list ? opts.registry.list() : null),
         budget: state.budget,
-        forceCompare: !!opts.forceCompare
+        forceCompare: !!opts.forceCompare,
+        agentRuntime: agentRuntimeOn
       });
     } catch (e) {
       plan = null;
@@ -364,6 +370,25 @@
       goalEnabled: !!opts.goalEnabled
     });
     var state = prepared.state;
+
+    /* V2 P3：LLM 规划（显式开关 + 可用云模型来源）。失败/非法输出自动保留模板计划。 */
+    if ((opts.llmPlanner === true || root.ASTRUM_LLM_PLANNER === true) &&
+      prepared.plan && root.AstroPlanner && typeof root.AstroPlanner.planWithModel === 'function' &&
+      root.AstroAgentExecutor && root.AstroAgentExecutor.available()) {
+      var llmPlan = null;
+      try {
+        llmPlan = await root.AstroPlanner.planWithModel(
+          { query, intent: prepared.intent, targets: prepared.targets, route: prepared.route, ctx: ctx, cfg: cfg },
+          { registry: rt.registry, sourceId: root.AstroAgentExecutor.available() }
+        );
+      } catch (e) { llmPlan = null; }
+      if (llmPlan && llmPlan.ok && llmPlan.plan) {
+        prepared.plan = llmPlan.plan;
+        state.plan = llmPlan.plan;
+        state.steps = llmPlan.plan.steps.map(T.makeStep);
+        T.appendEvent(state, 'task.replanned', { reason: 'llm_plan' });
+      }
+    }
     var eventIndex = 0;
     var cpWritten = {};
     /* B4：本次运行的所有保存都携带同一个修订号，旧修订写入会被 STALE_WRITE 拒绝。 */
@@ -490,6 +515,8 @@
       registry: rt.registry, ctx: ctx, cfg: cfg, adapter: rt.adapter,
       signal: runSignal,
       principal: rt.principal,
+      sourceId: (root.AstroAgentExecutor && root.AstroAgentExecutor.available)
+        ? root.AstroAgentExecutor.available() : null,
       onBatchSettled: onBatchSettled,
       onStepStarted: notifyStepStarted
     });
@@ -712,6 +739,98 @@
       } catch (e) { /* 刷新失败不阻断；下一轮沿用已有 research */ }
     }
 
+    /* V2 P0-D：Critic 独立评审。仅对 postCritic 计划生效；可用 opts.critic=false 关闭。
+     * 审查只读：不删除证据、不改写 Agent 成果，只附加评审结果与边界说明。 */
+    var criticResult = null;
+    if (currentPlan && currentPlan.postCritic && opts.critic !== false && root.AstroCriticAgent) {
+      var criticAnswer = freshAnswer ? freshAnswer.answer : (runner ? runner.answer : null);
+      if (criticAnswer) {
+        try {
+          criticResult = root.AstroCriticAgent.review({
+            state: state, plan: currentPlan, answer: criticAnswer,
+            stepResults: successfulStepResults(state), query: prepared.query
+          });
+        } catch (e) { criticResult = null; }
+
+        /* 最多一次补充取证：NEEDS_EVIDENCE 且预算允许时，追加一个定向检索步骤。 */
+        if (criticResult && criticResult.verdict === 'NEEDS_EVIDENCE' && criticResult.retryable &&
+          !opts._criticRetried && root.AstroPlanner && root.AstroPlanner.expand &&
+          T.canAfford(state.budget, { appends: 1, searches: 1 }) &&
+          !(runSignal && runSignal.aborted)) {
+          var expPlan = null;
+          try {
+            expPlan = root.AstroPlanner.expand(currentPlan, {
+              basis: [{ code: 'critical_claim_without_support', text: criticResult.missingEvidence[0] || prepared.query }],
+              direction: 'positive', conflicts: [], conflictKeys: []
+            }, { registry: rt.registry, budget: state.budget, query: criticResult.missingEvidence[0] || prepared.query });
+          } catch (e2) { expPlan = null; }
+          if (expPlan) {
+            T.spend(state.budget, { appends: 1 });
+            var knownCritic = {};
+            state.steps.forEach(function (s) { knownCritic[s.id] = 1; });
+            expPlan.steps.forEach(function (s) {
+              if (!knownCritic[s.id]) { state.steps.push(T.makeStep(s)); knownCritic[s.id] = 1; }
+            });
+            state.plan = expPlan;
+            currentPlan = expPlan;
+            T.appendEvent(state, 'critic.supplement', { reason: String(criticResult.missingEvidence[0] || '').slice(0, 80) });
+            T.transition(state, 'PROGRESS');
+            T.transition(state, 'PLAN');
+            T.transition(state, 'EXECUTE');
+            runner = await O.runPlan(expPlan, state, {
+              registry: rt.registry, ctx: ctx, cfg: cfg, adapter: rt.adapter,
+              signal: runSignal,
+              onBatchSettled: onBatchSettled,
+              onStepStarted: notifyStepStarted
+            });
+            /* 补充取证同样必须尊重取消/暂停：不得在中断后继续交付。 */
+            if (runner && (runner.aborted || runner.paused || runner.waitingApproval)) {
+              releaseRun(state.id, runCtl);
+              if (runner.aborted) T.transition(state, 'ABORTED');
+              emitNew(state, eventIndex, opts);
+              await persist();
+              return resultOf(prepared, state, runner, null, null, runner.aborted
+                ? { cancelled: true, verdict: 'ABORTED', legacy: false }
+                : { paused: !!runner.paused, waitingApproval: !!runner.waitingApproval, resumable: true,
+                  verdict: runner.paused ? 'PAUSED' : 'WAITING_APPROVAL', legacy: false });
+            }
+            /* W2：补证后必须用最新成功步骤重建答案，否则新证据不会进入最终汇总。
+             * 与研究循环保持同一刷新路径；刷新失败才退回 Runner 自带答案。 */
+            var supAnswer = null;
+            try {
+              supAnswer = rt.adapter.deliverWithDelivery(prepared.query, ctx, cfg, successfulStepResults(state),
+                { compare: state.mode === 'compare' || !!opts.forceCompare });
+            } catch (e6) { supAnswer = null; }
+            if (supAnswer && supAnswer.answer) {
+              freshAnswer = supAnswer;
+              criticAnswer = supAnswer.answer;
+            } else if (runner && runner.answer) {
+              freshAnswer = { answer: runner.answer, delivery: extractDelivery(state) };
+              criticAnswer = runner.answer;
+            }
+            try {
+              criticResult = root.AstroCriticAgent.review({
+                state: state, plan: currentPlan, answer: criticAnswer,
+                stepResults: successfulStepResults(state), query: prepared.query, retried: true
+              });
+            } catch (e3) { /* 保留首次评审结果 */ }
+          }
+        }
+
+        if (criticResult) {
+          state.eval = state.eval || {};
+          state.eval.critic = criticResult;
+          if (criticAnswer) root.AstroCriticAgent.applyToAnswer(criticAnswer, criticResult);
+          try {
+            T.appendEvent(state, 'critic.reviewed', {
+              verdict: criticResult.verdict,
+              fixes: (criticResult.requiredFixes || []).length
+            });
+          } catch (e4) { /* ignore */ }
+        }
+      }
+    }
+
     releaseRun(state.id, runCtl);
     var answer = runner ? runner.answer : null;
     var delivery = extractDelivery(state);
@@ -733,6 +852,8 @@
     safeCheckpoint(state, { taskStatus: 'PROGRESS' });
     var review = answer && answer.meta && answer.meta.review ? answer.meta.review : null;
     var rawVerdict = review && review.verdict ? review.verdict : (answer ? 'PARTIAL' : 'FAIL');
+    /* Critic 的 FAIL 作为最终结论的一部分对外呈现（仍交付答案，不删证据）。 */
+    if (criticResult && criticResult.verdict === 'FAIL') rawVerdict = 'FAIL';
     T.appendEvent(state, 'verdict.issued', { verdict: rawVerdict });
     T.transition(state, 'JUDGE');
 
@@ -746,8 +867,10 @@
     }
 
     /* P0 阶段 legacy review 的 FAIL 不作为最终 FAILED：仍交付旧答案，
-     * 状态收敛到 PARTIAL（FAILED 仅保留给无答案 / 不可恢复失败）。 */
-    var finalVerdict = rawVerdict === 'PASS' ? 'PASS' : 'PARTIAL';
+     * 状态收敛到 PARTIAL（FAILED 仅保留给无答案 / 不可恢复失败）。
+     * V2 P0-D：Critic 明确 FAIL 时对外 verdict 记为 FAIL，但任务仍以 PARTIAL 收尾。 */
+    var finalVerdict = rawVerdict === 'PASS' ? 'PASS'
+      : ((criticResult && criticResult.verdict === 'FAIL') ? 'FAIL' : 'PARTIAL');
     T.transition(state, 'COMPOSE');
     T.transition(state, finalVerdict === 'PASS' ? 'DONE' : 'PARTIAL');
     emitNew(state, eventIndex, opts);

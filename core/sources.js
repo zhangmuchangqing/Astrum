@@ -2141,9 +2141,402 @@
 
   load();
 
+  /* ============================================================
+     V2 P0-A：工具调用协议（纯增量）
+     ------------------------------------------------------------
+     本段只新增「按供应商构造 tools / 解析 tool_calls」的能力，
+     不修改 generate / streamChat / buildRequest / parseResponse 的任何既有行为。
+     旧的表述层调用方继续走原路径。
+     ============================================================ */
+
+  function baseMetaOf(id) {
+    var hit = REGISTRY.filter(function (r) { return r.id === id; })[0];
+    return hit || null;
+  }
+
+  function shapeOf(id) {
+    var b = baseMetaOf(id);
+    return b ? (b.shape || 'openai') : 'openai';
+  }
+
+  function toolParamsOf(t) {
+    return (t && t.parameters) || (t && t.parametersSchema) || { type: 'object', properties: {} };
+  }
+
+  /* 供应商工具定义。tools 必须是已映射为供应商合法名称的数组。 */
+  function toolDefsPayload(shape, tools) {
+    var list = (tools || []).filter(function (t) { return t && t.name; });
+    if (shape === 'anthropic') {
+      return list.map(function (t) {
+        return { name: t.name, description: t.description || '', input_schema: toolParamsOf(t) };
+      });
+    }
+    if (shape === 'gemini') {
+      return [{
+        functionDeclarations: list.map(function (t) {
+          return { name: t.name, description: t.description || '', parameters: toolParamsOf(t) };
+        })
+      }];
+    }
+    return list.map(function (t) {
+      return { type: 'function', function: { name: t.name, description: t.description || '', parameters: toolParamsOf(t) } };
+    });
+  }
+
+  function toAnthropicMessages(messages) {
+    var system = [];
+    var out = [];
+    function push(role, blocks) {
+      if (!blocks.length) return;
+      var last = out[out.length - 1];
+      if (last && last.role === role) last.content = last.content.concat(blocks);
+      else out.push({ role: role, content: blocks });
+    }
+    (messages || []).forEach(function (m) {
+      m = m || {};
+      if (m.role === 'system') {
+        if (m.content) system.push({ type: 'text', text: String(m.content) });
+        return;
+      }
+      if (m.role === 'tool') {
+        push('user', [{
+          type: 'tool_result',
+          tool_use_id: m.toolCallId || m.id || '',
+          content: String(m.content == null ? '' : m.content)
+        }]);
+        return;
+      }
+      if (m.role === 'assistant') {
+        var blocks = [];
+        if (m.content) blocks.push({ type: 'text', text: String(m.content) });
+        (m.toolCalls || []).forEach(function (tc) {
+          blocks.push({
+            type: 'tool_use',
+            id: tc.id || ('toolu_' + Math.random().toString(36).slice(2, 10)),
+            name: tc.name,
+            input: tc.arguments && typeof tc.arguments === 'object' ? tc.arguments : {}
+          });
+        });
+        push('assistant', blocks);
+        return;
+      }
+      push('user', [{ type: 'text', text: m.content == null ? '' : String(m.content) }]);
+    });
+    if (!out.length) out.push({ role: 'user', content: [{ type: 'text', text: '（无输入）' }] });
+    return { system: system, messages: out };
+  }
+
+  function toGeminiContents(messages) {
+    var system = [];
+    var out = [];
+    function push(role, parts) {
+      if (!parts.length) return;
+      var last = out[out.length - 1];
+      if (last && last.role === role) last.parts = last.parts.concat(parts);
+      else out.push({ role: role, parts: parts });
+    }
+    (messages || []).forEach(function (m) {
+      m = m || {};
+      if (m.role === 'system') {
+        if (m.content) system.push({ text: String(m.content) });
+        return;
+      }
+      if (m.role === 'tool') {
+        push('user', [{
+          functionResponse: {
+            name: m.name || '',
+            response: { content: String(m.content == null ? '' : m.content) }
+          }
+        }]);
+        return;
+      }
+      if (m.role === 'assistant') {
+        var parts = [];
+        if (m.content) parts.push({ text: String(m.content) });
+        (m.toolCalls || []).forEach(function (tc) {
+          parts.push({
+            functionCall: {
+              name: tc.name,
+              args: tc.arguments && typeof tc.arguments === 'object' ? tc.arguments : {}
+            }
+          });
+        });
+        push('model', parts);
+        return;
+      }
+      push('user', [{ text: m.content == null ? '' : String(m.content) }]);
+    });
+    if (!out.length) out.push({ role: 'user', parts: [{ text: '（无输入）' }] });
+    return { system: system, contents: out };
+  }
+
+  /* 在 buildRequest 的 url/headers 基础上替换 body（协议实现仍在本文件）。 */
+  function buildToolRequest(id, payload) {
+    payload = payload || {};
+    var shape = shapeOf(id);
+    var c = conf(id);
+    var req = buildRequest(id, payload);
+    var temperature = payload.temperature != null ? payload.temperature : c.temperature;
+    var maxTokens = payload.maxTokens != null ? payload.maxTokens : c.maxTokens;
+    var tools = payload.tools && payload.tools.length ? toolDefsPayload(shape, payload.tools) : null;
+
+    if (shape === 'anthropic') {
+      var a = toAnthropicMessages(payload.messages);
+      var abody = {
+        model: c.model,
+        max_tokens: maxTokens,
+        temperature: temperature,
+        system: a.system,
+        messages: a.messages
+      };
+      if (tools) { abody.tools = tools; abody.tool_choice = { type: 'auto' }; }
+      req.body = abody;
+    } else if (shape === 'gemini') {
+      var g = toGeminiContents(payload.messages);
+      var gbody = {
+        systemInstruction: g.system.length ? { parts: g.system } : undefined,
+        contents: g.contents,
+        generationConfig: { temperature: temperature, maxOutputTokens: maxTokens }
+      };
+      if (tools) { gbody.tools = tools; gbody.toolConfig = { functionCallingConfig: { mode: 'AUTO' } }; }
+      req.body = gbody;
+    } else {
+      var msgs = (payload.messages || []).map(function (m) {
+        m = m || {};
+        if (m.role === 'assistant' && m.toolCalls && m.toolCalls.length) {
+          return {
+            role: 'assistant',
+            content: m.content == null || m.content === '' ? null : String(m.content),
+            tool_calls: m.toolCalls.map(function (tc) {
+              return {
+                id: tc.id || ('call_' + Math.random().toString(36).slice(2, 10)),
+                type: 'function',
+                function: { name: tc.name, arguments: JSON.stringify(tc.arguments || {}) }
+              };
+            })
+          };
+        }
+        if (m.role === 'tool') {
+          return { role: 'tool', tool_call_id: m.toolCallId || m.id || '', content: String(m.content == null ? '' : m.content) };
+        }
+        return { role: m.role === 'system' ? 'system' : m.role, content: m.content == null ? '' : String(m.content) };
+      });
+      var obody = { model: c.model, temperature: temperature, max_tokens: maxTokens, messages: msgs };
+      if (tools) { obody.tools = tools; obody.tool_choice = 'auto'; }
+      req.body = obody;
+    }
+    /* 模型分级：允许调用方按档位覆盖模型；未指定时沿用来源配置。 */
+    if (payload.model) {
+      if (shape === 'gemini' && req.url) {
+        req.url = req.url.replace('/models/' + c.model, '/models/' + String(payload.model));
+      } else if (req.body) {
+        req.body.model = String(payload.model);
+      }
+    }
+    return req;
+  }
+
+  function parseToolArgs(raw) {
+    if (raw == null || raw === '') return { ok: true, value: {} };
+    if (typeof raw === 'object') return { ok: true, value: raw };
+    try { return { ok: true, value: JSON.parse(String(raw)) }; }
+    catch (e) { return { ok: false, value: null }; }
+  }
+
+  function usageNormalized(u) {
+    if (!u) return { promptTokens: null, completionTokens: null, totalTokens: null };
+    var p = typeof u.prompt === 'number' ? u.prompt : null;
+    var c2 = typeof u.completion === 'number' ? u.completion : null;
+    var t = typeof u.total === 'number' ? u.total : (p == null && c2 == null ? null : (p || 0) + (c2 || 0));
+    return { promptTokens: p, completionTokens: c2, totalTokens: t };
+  }
+
+  /* 统一响应结构；解析失败必须显式失败，不得当作成功。 */
+  function parseRawResponse(id, data) {
+    var shape = shapeOf(id);
+    var c = conf(id);
+    var text = '';
+    var calls = [];
+    var finish = '';
+    var parseError = '';
+    var requestId = (data && (data.id || data.requestId)) || null;
+
+    if (shape === 'anthropic') {
+      (data && data.content || []).forEach(function (b) {
+        if (!b) return;
+        if (b.type === 'text') text += (b.text || '');
+        else if (b.type === 'tool_use') {
+          calls.push({
+            id: b.id || ('toolu_' + calls.length),
+            name: b.name || '',
+            arguments: b.input && typeof b.input === 'object' ? b.input : {}
+          });
+        }
+      });
+      finish = (data && data.stop_reason) || '';
+    } else if (shape === 'gemini') {
+      var cand = ((data && data.candidates) || [])[0] || null;
+      var parts = (cand && cand.content && cand.content.parts) || [];
+      parts.forEach(function (p) {
+        if (!p) return;
+        if (p.text != null) text += String(p.text);
+        if (p.functionCall) {
+          calls.push({
+            id: 'call_' + calls.length,
+            name: p.functionCall.name || '',
+            arguments: p.functionCall.args && typeof p.functionCall.args === 'object' ? p.functionCall.args : {}
+          });
+        }
+      });
+      finish = (cand && cand.finishReason) || '';
+    } else {
+      var ch = ((data && data.choices) || [])[0] || null;
+      var msg = (ch && ch.message) || {};
+      text = (msg.content == null ? '' : String(msg.content)) || (ch && ch.text) || '';
+      (msg.tool_calls || []).forEach(function (tc) {
+        if (!tc) return;
+        var fn = tc.function || {};
+        var parsed = parseToolArgs(fn.arguments);
+        if (!parsed.ok) { parseError = '工具参数不是合法 JSON: ' + String(fn.arguments).slice(0, 80); return; }
+        calls.push({ id: tc.id || ('call_' + calls.length), name: fn.name || '', arguments: parsed.value });
+      });
+      finish = (ch && ch.finish_reason) || '';
+    }
+
+    text = clean(text);
+    var status = 'completed';
+    var error = null;
+    if (parseError) {
+      status = 'failed';
+      error = {
+        code: 'TOOL_CALL_PARSE_ERROR', kind: 'TOOL_CALL_PARSE_ERROR', message: parseError,
+        status: null, retryAfter: null, retriable: false, raw: ''
+      };
+    } else if (!text && !calls.length) {
+      status = 'failed';
+      error = {
+        code: 'INVALID_RESPONSE', kind: 'INVALID_RESPONSE', message: '模型返回空内容且无工具调用',
+        status: null, retryAfter: null, retriable: false, raw: ''
+      };
+    }
+    return {
+      status: status,
+      text: text,
+      toolCalls: calls,
+      finishReason: finish,
+      usage: usageNormalized(usageOf(shape, data)),
+      provider: id,
+      model: c ? c.model : '',
+      requestId: requestId,
+      error: error,
+      raw: data
+    };
+  }
+
+  function rawFailure(id, code, message, extra) {
+    var c = conf(id);
+    return {
+      status: code === 'ABORTED' ? 'aborted' : 'failed',
+      text: '', toolCalls: [], finishReason: '',
+      usage: { promptTokens: null, completionTokens: null, totalTokens: null },
+      provider: id, model: c ? c.model : '', requestId: null,
+      error: {
+        code: code, kind: code, message: String(message || code),
+        status: (extra && extra.status) || null,
+        retryAfter: (extra && extra.retryAfter) || null,
+        retriable: !!(extra && extra.retriable),
+        raw: (extra && extra.raw) || ''
+      },
+      raw: null
+    };
+  }
+
+  function kindToCode(kind) {
+    return ({
+      auth: 'AUTH_ERROR', rate_limit: 'RATE_LIMITED', timeout: 'TIMEOUT',
+      network: 'NETWORK_ERROR', cors: 'NETWORK_ERROR', csp: 'NETWORK_ERROR',
+      server: 'PROVIDER_ERROR', notfound: 'INVALID_REQUEST', parse: 'INVALID_RESPONSE',
+      stream: 'PROVIDER_ERROR', empty: 'INVALID_RESPONSE'
+    })[kind] || 'UNKNOWN';
+  }
+
+  /* 与 generate 并列的原始调用：不因空正文抛错，保留 toolCalls。 */
+  function generateRaw(id, payload) {
+    payload = payload || {};
+    var base = baseMetaOf(id);
+    var c = conf(id);
+    if (!base) return Promise.resolve(rawFailure(id, 'INVALID_REQUEST', '模型来源不存在'));
+    if (base.type !== 'cloud') {
+      return Promise.resolve(rawFailure(id, 'INVALID_REQUEST', '该来源不支持工具调用或原始模型调用'));
+    }
+    if (needsKey(base) && !c.key) return Promise.resolve(rawFailure(id, 'AUTH_ERROR', '未配置密钥'));
+    var gate = allow('cloud');
+    if (!gate.ok) return Promise.resolve(rawFailure(id, 'RATE_LIMITED', gate.msg));
+    if (payload.signal && payload.signal.aborted) {
+      return Promise.resolve(rawFailure(id, 'ABORTED', '已取消'));
+    }
+
+    var req;
+    try { req = buildToolRequest(id, payload); }
+    catch (e) { return Promise.resolve(rawFailure(id, 'INVALID_REQUEST', e && e.message || '请求构造失败')); }
+
+    var t0 = Date.now();
+    var timer = withTimeout(payload.timeoutMs || 60000, payload.signal);
+
+    return fetch(req.url, {
+      method: 'POST', headers: req.headers, body: JSON.stringify(req.body), signal: timer.signal
+    }).then(function (r) {
+      timer.done();
+      if (!r.ok) {
+        return r.text().then(function (t) {
+          var e = httpError(r.status, t);
+          var cls = classifyError(e);
+          var msg = cls.msg || ('HTTP ' + r.status);
+          setStatus(id, 'error', msg);
+          return rawFailure(id, kindToCode(cls.kind), msg + (t ? '：' + String(t).slice(0, 90) : ''), {
+            status: r.status, retryAfter: cls.retryAfter,
+            retriable: (['network', 'timeout', 'rate_limit', 'server'].indexOf(cls.kind) >= 0),
+            raw: t
+          });
+        }, function () {
+          return rawFailure(id, 'PROVIDER_ERROR', 'HTTP ' + r.status, { status: r.status, retriable: true });
+        });
+      }
+      return r.json().then(function (d) {
+        var out = parseRawResponse(id, d);
+        out.latency = Date.now() - t0;
+        if (out.status === 'completed') {
+          state.metrics[id] = {
+            latency: out.latency, chars: out.text.length,
+            tokens: (out.usage && out.usage.totalTokens) || 0
+          };
+          setStatus(id, 'ready', '已连通');
+          save();
+        }
+        return out;
+      }, function () {
+        return rawFailure(id, 'INVALID_RESPONSE', '返回内容无法解析为 JSON');
+      });
+    }).catch(function (e) {
+      timer.done();
+      var aborted = !!(payload.signal && payload.signal.aborted);
+      if (aborted) return rawFailure(id, 'ABORTED', '已取消');
+      if (e && e.name === 'AbortError') {
+        return rawFailure(id, 'TIMEOUT', '请求超时', { retriable: true });
+      }
+      var cls = classifyError(e);
+      return rawFailure(id, kindToCode(cls.kind), (e && e.message) || '网络错误', {
+        retriable: (['network', 'timeout', 'rate_limit', 'server'].indexOf(cls.kind) >= 0)
+      });
+    });
+  }
+
   root.Sources = {
     list: list, cloudProviders: cloudProviders, conf: conf, setConfig: setConfig, statusOf: statusOf,
     test: test, generate: generate,
+    /* V2 P0-A：工具调用协议（增量；旧路径不受影响） */
+    shapeOf: shapeOf, toolDefsPayload: toolDefsPayload, buildToolRequest: buildToolRequest,
+    parseRawResponse: parseRawResponse, generateRaw: generateRaw,
     /* V1.11：流式入口与能力判断（不改变 generate 契约） */
     streamChat: streamChat, streamCapable: streamCapable, buildStreamRequest: buildStreamRequest,
     metrics: function (id) { return state.metrics[id] || null; },

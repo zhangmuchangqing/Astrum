@@ -322,6 +322,27 @@
     var evidenceById = {};
     dd.evidence.forEach(function (ev) { evidenceById[ev.evidenceId] = ev; });
 
+    /* V2 P0-B：可选消费 Agent 成果。
+     * - 只引用已存在的 Evidence，绝不新建 Evidence。
+     * - 未提供 agentResults 时，输出与旧版本逐字段一致。 */
+    var hasAgentResults = Array.isArray(input.agentResults);
+    var agentResults = hasAgentResults ? clone(input.agentResults) : [];
+    var agentEvidenceMissing = [];
+    if (hasAgentResults) {
+      var extraEvidence = [];
+      agentResults.forEach(function (ar) {
+        (ar && ar.evidenceIds || []).forEach(function (eid) {
+          if (evidenceById[eid]) extraEvidence.push(evidenceById[eid]);
+          else agentEvidenceMissing.push({ agentId: ar.agentId, evidenceId: eid });
+        });
+      });
+      if (extraEvidence.length) {
+        dd = dedupe(dd.evidence.concat(extraEvidence));
+        evidenceById = {};
+        dd.evidence.forEach(function (ev) { evidenceById[ev.evidenceId] = ev; });
+      }
+    }
+
     var claims = clone(input.claims || (state && state.claims) || []);
     var verdicts = clone(input.verdicts || (state && state.eval && state.eval.claimVerdicts) || []);
     var vmap = verdictMap(verdicts);
@@ -354,7 +375,7 @@
     var conflicts = cmp.conflicts;
     var differences = cmp.differences;
 
-    return {
+    var out = {
       okSteps: okSteps,
       failedSteps: failedSteps,
       evidence: dd.evidence,
@@ -375,6 +396,33 @@
         independentSources: sources.length
       }
     };
+    if (hasAgentResults) {
+      var byAgent = {};
+      agentResults.forEach(function (ar) {
+        if (!ar || !ar.agentId) return;
+        var g = byAgent[ar.agentId] || (byAgent[ar.agentId] = {
+          agentId: ar.agentId, status: ar.status || 'completed',
+          findings: [], evidenceIds: [], limitations: [], toolCalls: 0, claims: []
+        });
+        if (ar.status === 'failed' || ar.status === 'timeout' || ar.status === 'blocked') g.status = 'failed';
+        else if (ar.status === 'partial' && g.status !== 'failed') g.status = 'partial';
+        g.findings = g.findings.concat(ar.findings || []);
+        g.evidenceIds = g.evidenceIds.concat(ar.evidenceIds || []);
+        g.limitations = g.limitations.concat(ar.limitations || []);
+        g.claims = g.claims.concat(ar.claims || []);
+        g.toolCalls += (ar.toolCalls || []).length;
+      });
+      Object.keys(byAgent).forEach(function (k) {
+        byAgent[k].evidenceIds = byAgent[k].evidenceIds.filter(function (v, i, a) { return a.indexOf(v) === i; });
+      });
+      out.agentResults = agentResults;
+      out.byAgent = byAgent;
+      out.agentFailures = agentResults.filter(function (ar) {
+        return ar && (ar.status === 'failed' || ar.status === 'timeout' || ar.status === 'blocked' || ar.status === 'cancelled');
+      });
+      out.agentEvidenceMissing = agentEvidenceMissing;
+    }
+    return out;
   }
 
   root.AstroReducer = {

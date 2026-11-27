@@ -33,12 +33,12 @@
     },
     'T-E': {
       label: 'paper / latest research',
-      tools: ['simbad.tap', 'paper.search', 'evidence.search', 'compose.domain'],
+      tools: ['simbad.tap', 'paper.search', 'evidence.search', 'compose.domain', 'agent.research'],
       compose: true
     },
     'T-F': {
       label: 'controversy',
-      tools: ['simbad.tap', 'evidence.search', 'kepler.ephemeris'],
+      tools: ['simbad.tap', 'evidence.search', 'kepler.ephemeris', 'paper.search', 'agent.research'],
       compose: false,
       postCritic: true
     },
@@ -278,9 +278,22 @@
       return steps;
     },
     'T-E': function (input, b) {
-      var first = b.names[0] || b.query;
       var search = researchQueryOf(b);
+      /* V2 P0-C：显式启用 Agent Runtime 时，用 Scholar Agent 替代固定检索链；
+       * 默认关闭，旧模板步骤与编号保持完全不变。 */
+      if (input.agentRuntime) {
+        var agent = makeStep('t1', 'agent.research', { query: search }, [], false, true, false);
+        agent.kind = 'agent';
+        agent.agentId = 'scholar';
+        agent.tools = ['paper.search', 'evidence.search'];
+        agent.objective = '检索并核验与问题相关的论文证据：' + b.query;
+        return [
+          agent,
+          makeStep('t2', 'compose.domain', { query: b.query, intent: b.intent, from: ['t1'] }, ['t1'], false, true, false)
+        ];
+      }
       var deps = ['t2', 't3'], steps = [];
+      var first = b.names[0] || b.query;
       /* 主题型研究（JWST/系外行星/星系形成）没有可解析的坐标目标，
        * SIMBAD 只会超时；直接跳过这个可选步骤，保留 t2/t3 编号。 */
       if (b.coord) {
@@ -294,6 +307,14 @@
     },
     'T-F': function (input, b) {
       var search = researchQueryOf(b);
+      if (input.agentRuntime) {
+        var agent = makeStep('t1', 'agent.research', { query: search }, [], false, true, false);
+        agent.kind = 'agent';
+        agent.agentId = 'scholar';
+        agent.tools = ['evidence.search', 'paper.search'];
+        agent.objective = '围绕争议点检索正反证据并核验：' + b.query;
+        return [agent];
+      }
       var steps = [];
       if (b.coord) steps.push(makeStep('t1', 'simbad.tap', { query: b.names[0] || b.query }, [], true, false, true));
       steps.push(makeStep('t2', 'evidence.search', { query: search, direction: 'positive' }, [], true, true, false));
@@ -401,6 +422,12 @@
           }
         }
       }
+      /* V2 P0-C：Agent 步骤不要求注册为普通工具，但必须声明角色与白名单。 */
+      if (s.kind === 'agent') {
+        if (typeof s.agentId !== 'string' || !s.agentId) err(p + '.agentId', 'agent 步骤必须指定 agentId');
+        if (!Array.isArray(s.tools) || !s.tools.length) err(p + '.tools', 'agent 步骤必须声明工具白名单');
+        if (s.tool !== 'agent.research') err(p + '.tool', '未知 agent 步骤类型: ' + s.tool);
+      }
     }
 
     /* 依赖无环（DFS） */
@@ -431,6 +458,13 @@
     if (opts.registry && tpl) {
       for (i = 0; i < plan.steps.length; i++) {
         s = plan.steps[i];
+        if (s.kind === 'agent') {
+          var badTools = (s.tools || []).filter(function (tid) {
+            return !(opts.registry.get && opts.registry.get(tid));
+          });
+          if (badTools.length) err('$.steps[' + i + '].tools', 'Agent 工具未注册: ' + badTools.join(','));
+          continue;
+        }
         var spec = opts.registry.get ? opts.registry.get(s.tool) : null;
         if (!spec) {
           err('$.steps[' + i + '].tool', '工具未注册: ' + s.tool);
@@ -452,6 +486,7 @@
     } else if (opts.capabilities) {
       var caps = opts.capabilities.map(toolIdOf);
       for (i = 0; i < plan.steps.length; i++) {
+        if (plan.steps[i].kind === 'agent') continue;
         if (!includes(caps, plan.steps[i].tool)) err('$.steps[' + i + '].tool', '能力表无此工具');
       }
     }
@@ -628,12 +663,102 @@
     return out;
   }
 
+  /* V2 P3：LLM 规划器（默认关闭）。
+   * 安全约束：只能使用已注册工具；输出必须同时通过 dag-validator 与 planner.validate；
+   * 任一失败由调用方回退模板，绝不执行未校验计划。 */
+  var LLM_MAX_STEPS = 6;
+
+  function extractJson(text) {
+    var s = String(text || '').trim();
+    var fence = s.match(/```(?:json)?([\s\S]*?)```/i);
+    if (fence) s = fence[1].trim();
+    var start = s.indexOf('{');
+    var end = s.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try { return JSON.parse(s.slice(start, end + 1)); } catch (e) { return null; }
+  }
+
+  function planWithModel(input, opts) {
+    input = input || {};
+    opts = opts || {};
+    var Gateway = root.AstroModelGateway;
+    var reg = opts.registry;
+    var sourceId = opts.sourceId;
+    if (!Gateway || !reg || !sourceId) {
+      return Promise.resolve({ ok: false, reason: 'planner_unavailable', errors: [] });
+    }
+    var tools = [];
+    try { tools = reg.list() || []; } catch (e) { tools = []; }
+    var catalog = tools.map(function (t) {
+      return t.id + '：' + String(t.description || '').slice(0, 80);
+    }).join('\n');
+    var prompt = [
+      '你是 ASTRUM 的天文研究规划器。把用户问题拆成 3-' + LLM_MAX_STEPS + ' 个可执行步骤。',
+      '只能使用下列已注册工具，不得虚构工具或参数：',
+      catalog,
+      '输出严格 JSON：{"steps":[{"id":"t1","tool":"paper.search","args":{},"deps":[],"critical":true,"optional":false,"parallel":false,"objective":"..."}]}',
+      '要求：id 唯一；deps 只能引用已有 id 且不得成环；至少一个 critical；compose 类步骤不得 parallel；每步必须有 objective。',
+      '只输出 JSON，不要解释。'
+    ].join('\n');
+
+    return Gateway.generate({
+      sourceId: sourceId,
+      agentId: 'planner',
+      messages: [
+        { role: 'system', content: '你是严谨的研究规划器，输出必须是合法 JSON。' },
+        { role: 'user', content: prompt + '\n\n用户问题：' + String(input.query || '') }
+      ],
+      tools: null, cache: false, maxRetries: 0, timeoutMs: 30000
+    }).then(function (resp) {
+      if (!resp || resp.status !== 'completed') {
+        return { ok: false, reason: 'planner_model_failed', errors: [resp && resp.error] };
+      }
+      var raw = extractJson(resp.text);
+      if (!raw || !Array.isArray(raw.steps)) return { ok: false, reason: 'planner_invalid_json', errors: [] };
+      if (!raw.steps.length || raw.steps.length > LLM_MAX_STEPS) return { ok: false, reason: 'planner_step_count', errors: [] };
+
+      var known = {};
+      tools.forEach(function (t) { known[t.id] = 1; });
+      var steps = [];
+      var bad = null;
+      raw.steps.forEach(function (s, idx) {
+        if (bad) return;
+        if (!s || typeof s !== 'object') { bad = 'step_shape'; return; }
+        var id = String(s.id || ('t' + (idx + 1)));
+        var tool = String(s.tool || '');
+        if (!known[tool]) { bad = 'tool_not_allowed:' + tool; return; }
+        var args = (s.args && typeof s.args === 'object') ? s.args : {};
+        var step = makeStep(id, tool, args, Array.isArray(s.deps) ? s.deps.slice() : [],
+          s.parallel === true, s.critical === true, s.optional === true);
+        step.objective = String(s.objective || '');
+        steps.push(step);
+      });
+      if (bad) return { ok: false, reason: bad, errors: [] };
+
+      var plan = {
+        id: 'llm-' + Date.now(),
+        basis: 'llm',
+        template: input.template || 'T-E',
+        steps: steps,
+        postCritic: true
+      };
+      var dv = (root.AstroDagValidator && root.AstroDagValidator.validate)
+        ? root.AstroDagValidator.validate(plan, { registry: reg })
+        : { ok: true, errors: [] };
+      if (!dv.ok) return { ok: false, reason: 'dag_invalid', errors: dv.errors };
+      return { ok: true, plan: plan };
+    }, function (e) {
+      return { ok: false, reason: 'planner_error', errors: [{ message: e && e.message }] };
+    });
+  }
+
   root.AstroPlanner = {
     TEMPLATES: TEMPLATES,
     composeForIntent: composeForIntent,
     chooseTemplate: chooseTemplate,
     buildPlan: buildPlan,
     plan: plan,
+    planWithModel: planWithModel,
     validate: validate,
     assertValid: assertValid,
     replan: replan,

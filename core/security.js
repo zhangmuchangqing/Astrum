@@ -68,7 +68,7 @@
       'evidence.read', 'claim.read', 'memory.read', 'memory.propose', 'tool.llm', 'tool.calculate',
       'skill.read', 'skill.propose', 'skill.create', 'skill.execute', 'report.create'],
     scholar: ['project.read', 'task.read', 'task.create', 'task.execute', 'task.pause', 'task.resume', 'task.cancel',
-      'evidence.read', 'claim.read', 'memory.read', 'memory.propose', 'tool.search', 'tool.external_api',
+      'evidence.read', 'claim.read', 'memory.read', 'memory.propose', 'tool.search', 'tool.external_api', 'tool.llm',
       'skill.read', 'skill.propose', 'skill.create', 'skill.execute'],
     critic: ['project.read', 'task.read', 'evidence.read', 'claim.read', 'memory.read', 'memory.propose',
       'tool.calculate', 'skill.read', 'skill.test', 'skill.evaluate', 'skill.execute', 'report.create'],

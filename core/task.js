@@ -37,11 +37,14 @@
     /* V2-B：暂停请求与暂停完成分离；持久化失败必须可追踪。 */
     'task.pause_requested', 'task.persist_failed',
     /* R-03：恢复人工确认动作（重跑 / 复用 / 放弃）。 */
-    'task.recovery_confirmed'
+    'task.recovery_confirmed',
+    /* V2 P2：Agent 执行与独立评审（真实事件，供 UI 只读展示）。 */
+    'agent.started', 'agent.result.created', 'critic.reviewed', 'critic.supplement'
   ];
 
   /* P0-01 §7.1：payload 只存最小上下文 */
-  var EVENT_PAYLOAD_KEYS = ['from', 'to', 'action', 'verdict', 'reason', 'attempt'];
+  var EVENT_PAYLOAD_KEYS = ['from', 'to', 'action', 'verdict', 'reason', 'attempt',
+    'agentId', 'objective', 'status', 'toolCalls', 'evidence', 'fixes'];
 
   /* P0-01 §9.2 唯一预算表 */
   var BUDGET_LIMITS = {
@@ -431,7 +434,10 @@
       replans: cloneArray(input.replans),
       trace: cloneArray(input.trace),
       errors: cloneArray(input.errors),
-      events: cloneArray(input.events)
+      events: cloneArray(input.events),
+      /* V2 P0-B：可选扩展；旧任务缺省为 [] / null，不改变既有字段语义。 */
+      agentResults: cloneArray(input.agentResults),
+      cost: input.cost == null ? null : input.cost
     };
   }
 
@@ -478,6 +484,13 @@
       fail('E_STATE_RECOVERIES', '$.recoveries 必须是非负数字', '$.recoveries');
     }
     if (!isArray(state.planHistory)) fail('E_STATE_PLAN_HISTORY', '$.planHistory 必须是数组', '$.planHistory');
+    /* V2 P0-B 可选字段：缺失合法；存在时必须类型正确（保持 schemaVersion=1）。 */
+    if (state.agentResults != null && !isArray(state.agentResults)) {
+      fail('E_STATE_AGENT_RESULTS', '$.agentResults 必须是数组或 null', '$.agentResults');
+    }
+    if (state.cost != null && !isPlainObject(state.cost)) {
+      fail('E_STATE_COST', '$.cost 必须是对象或 null', '$.cost');
+    }
 
     var i, j, item, path;
 
@@ -793,8 +806,28 @@
   /* ============================================================
      6. 预算辅助（只做结构约束，不实现调度）
      ============================================================ */
-  function canAfford(budget, delta) {
-    delta = delta || {};
+  /* V2 P0-E：成本聚合。只累计真实 usage；无价格表时 estimatedCost 保持 null。 */
+  function addCost(state, usage, meta) {
+    if (!state) return null;
+    var c = state.cost || {
+      promptTokens: 0, completionTokens: 0, totalTokens: 0,
+      estimatedCost: null, currency: null, calls: 0, lastProvider: null, lastModel: null, lastTier: null
+    };
+    c.calls = (c.calls || 0) + 1;
+    c.promptTokens = (c.promptTokens || 0) + ((usage && usage.promptTokens) || 0);
+    c.completionTokens = (c.completionTokens || 0) + ((usage && usage.completionTokens) || 0);
+    c.totalTokens = (c.totalTokens || 0) + ((usage && usage.totalTokens) || 0);
+    if (meta) {
+      if (meta.provider) c.lastProvider = meta.provider;
+      if (meta.model) c.lastModel = meta.model;
+      if (meta.tier) c.lastTier = meta.tier;
+    }
+    c.updatedAt = new Date().toISOString();
+    state.cost = c;
+    return c;
+  }
+
+  function canAfford(budget, delta) {    delta = delta || {};
     var k;
     for (k in delta) {
       if (Object.prototype.hasOwnProperty.call(delta, k) && includes(BUDGET_FIELDS, k)) {
@@ -843,6 +876,7 @@
     appendEvent: appendEvent,
     addCheckpoint: addCheckpoint,
     canAfford: canAfford,
+    addCost: addCost,
     spend: spend,
     computeInputHash: computeInputHash,
     canonicalJSON: canonicalJSON,

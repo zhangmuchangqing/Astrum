@@ -2270,6 +2270,44 @@
     return box;
   }
 
+  /* V2 P2：Agent 执行详情。数据只来自 state.agentResults 与 ans.meta.critic，
+   * 未提供数据时不渲染，不生成任何模拟步骤或百分比。 */
+  function agentPanel(state, ans) {
+    var list = (state && Array.isArray(state.agentResults)) ? state.agentResults : [];
+    var critic = ans && ans.meta && ans.meta.critic;
+    if (!list.length && !critic) return null;
+    var box = el('details', 'step-panel');
+    box.open = false;
+    var title = 'Agent 执行 · ' + list.length + ' 个';
+    if (critic && critic.verdict) title += ' · 评审 ' + critic.verdict;
+    box.appendChild(el('summary', 'step-summary', esc(title)));
+    list.forEach(function (a) {
+      a = a || {};
+      var row = el('div', 'step-row');
+      row.appendChild(el('span', 'step-tool', esc((a.agentId || 'agent') + ' · ' + (a.status || ''))));
+      var tools = (a.toolCalls || []).map(function (c) {
+        return (c.name || '') + ':' + (c.status || '');
+      }).filter(Boolean).join(', ');
+      row.appendChild(el('span', 'step-state', esc(tools || ((a.evidenceIds || []).length + ' 条证据'))));
+      if (a.objective) row.appendChild(el('span', 'step-err', esc(String(a.objective).slice(0, 60))));
+      (a.limitations || []).slice(0, 2).forEach(function (l) {
+        row.appendChild(el('span', 'step-err', esc(String(l).slice(0, 60))));
+      });
+      box.appendChild(row);
+    });
+    if (critic) {
+      var cr = el('div', 'step-row');
+      cr.appendChild(el('span', 'step-tool', esc('critic · ' + (critic.verdict || ''))));
+      var fixes = critic.requiredFixes || [];
+      cr.appendChild(el('span', 'step-state', esc(fixes.length ? fixes.slice(0, 2).join('；') : '无待补项')));
+      (critic.missingEvidence || []).slice(0, 1).forEach(function (m) {
+        cr.appendChild(el('span', 'step-err', esc('缺证：' + String(m).slice(0, 50))));
+      });
+      box.appendChild(cr);
+    }
+    return box;
+  }
+
   /* 答案核验提示：数值/引用审计属于可靠性说明，放在科研详情，
    * 不再拼接到模型正文末尾。 */
   function answerNotesNode(ans) {
@@ -2381,6 +2419,10 @@
     if (extra.state && Array.isArray(extra.state.steps)) {
       var sp = stepPanel(extra.state.steps, extra.state);
       if (sp) card.appendChild(sp);
+    }
+    if ((extra.state && Array.isArray(extra.state.agentResults)) || (ans.meta && ans.meta.critic)) {
+      var ap = agentPanel(extra.state || {}, ans);
+      if (ap) card.appendChild(ap);
     }
     if (ans.meta && ans.meta.styleSwitch) {
       var sw = el('div', 'recall');
@@ -3950,6 +3992,15 @@
       else if (ev.type === 'step.failed') label = '失败 ' + sid;
       else if (ev.type === 'step.skipped') label = '跳过 ' + sid;
       else if (ev.type === 'plan.expanded') label = '追加定向检索';
+      else if (ev.type === 'agent.started') label = 'Agent 执行中 · ' + ((ev.payload && ev.payload.agentId) || '');
+      else if (ev.type === 'agent.result.created') {
+        var ap = ev.payload || {};
+        label = 'Agent 完成 · ' + (ap.agentId || '') +
+          (typeof ap.toolCalls === 'number' ? ' · 工具 ' + ap.toolCalls : '') +
+          (typeof ap.evidence === 'number' ? ' · 证据 ' + ap.evidence : '');
+      }
+      else if (ev.type === 'critic.supplement') label = '独立评审要求补充取证';
+      else if (ev.type === 'critic.reviewed') label = '独立评审 · ' + ((ev.payload && ev.payload.verdict) || '');
       else if (ev.type === 'task.replanned') label = '重规划';
       else if (ev.type === 'task.cancelled') label = '已取消';
       else if (ev.type === 'task.pause_requested') label = L('暂停请求已发出');

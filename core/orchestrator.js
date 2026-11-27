@@ -278,7 +278,13 @@
         abortConfirmed: !!r.abortConfirmed
       };
     }
-    return { ok: true, result: r };
+    var out = { ok: true, result: r };
+    /* V2 P0-B：Agent 成果字段透传（缺失不新增键，旧输出逐字段不变）。 */
+    if (r && typeof r === 'object') {
+      ['agentId', 'objective', 'findings', 'evidenceIds', 'limitations', 'provenance', 'agentResult']
+        .forEach(function (k) { if (r[k] != null) out[k] = r[k]; });
+    }
+    return out;
   }
 
   /* C3：错误分类。未知错误按 tool_error 处理，只有明确可恢复类才允许重试。 */
@@ -440,6 +446,89 @@
     return { ok: false, critical: !!planStep.critical, reason: step.error.message, kind: step.error.kind };
   }
 
+  /* V2 P0-C：Agent 步骤执行。模型只能提出工具调用，执行统一走 ToolGateway。
+   * 默认不启用；仅在 Control 显式开关且存在可用云模型来源时才会进入。 */
+  async function executeAgentStep(planStep, state, opts, step, T) {
+    step.status = 'running';
+    step.toolId = planStep.tool;
+    step.kind = 'agent';
+    step.agentId = planStep.agentId || '';
+    step.startedAt = nowIso();
+    step.endedAt = null;
+    step.durationMs = null;
+    T.appendEvent(state, 'step.started', {}, planStep.id);
+    if (typeof opts.onStepStarted === 'function') {
+      try { await opts.onStepStarted(state, planStep); } catch (e) { /* ignore */ }
+    }
+
+    var EX = root.AstroAgentExecutor;
+    if (!EX || typeof EX.run !== 'function') {
+      step.endedAt = nowIso();
+      step.durationMs = durationOf(step.startedAt, step.endedAt);
+      setFailure(step, 'agent_runtime_missing', 'AgentExecutor 未加载', false);
+      T.appendEvent(state, 'step.failed', { reason: 'agent_runtime_missing' }, planStep.id);
+      return { ok: false, critical: !!planStep.critical, reason: 'agent_runtime_missing' };
+    }
+    if (!T.canAfford(state.budget, { llmCalls: 1 })) {
+      step.status = 'skipped';
+      step.endedAt = nowIso();
+      step.durationMs = durationOf(step.startedAt, step.endedAt);
+      step.error = { kind: 'budget', message: 'budget exhausted', retriable: false };
+      T.appendEvent(state, 'step.skipped', { reason: 'budget' }, planStep.id);
+      return { ok: false, budget: true, critical: !!planStep.critical, reason: 'budget' };
+    }
+
+    var out = null, err = null;
+    try {
+      out = await EX.run(planStep, {
+        state: state, ctx: opts.ctx, cfg: opts.cfg, registry: opts.registry,
+        principal: opts.principal, signal: opts.signal, sourceId: opts.sourceId,
+        taskId: state.id, allowDirectTools: opts.allowDirectTools === true
+      });
+    } catch (e) { err = e; }
+
+    step.endedAt = nowIso();
+    step.durationMs = durationOf(step.startedAt, step.endedAt);
+
+    if (!out) {
+      setFailure(step, 'agent_failed', (err && err.message) || 'agent failed', false);
+      T.appendEvent(state, 'step.failed', { reason: 'agent_failed' }, planStep.id);
+      return { ok: false, critical: !!planStep.critical, reason: 'agent_failed', kind: 'agent_failed' };
+    }
+    if (out.status === 'cancelled') {
+      step.status = 'aborted';
+      step.cancelled = true;
+      step.error = { kind: 'cancelled', message: '任务已取消', retriable: false };
+      T.appendEvent(state, 'step.cancelled', { reason: 'agent' }, planStep.id);
+      return { ok: false, aborted: true, critical: !!planStep.critical, reason: 'cancelled', kind: 'cancelled' };
+    }
+    if (out.status === 'completed' || out.status === 'partial') {
+      step.status = 'ok';
+      step.result = out;
+      /* P2：Agent 成果落盘到任务状态，供 UI 只读展示（不新建数据源）。 */
+      if (!Array.isArray(state.agentResults)) state.agentResults = [];
+      state.agentResults = state.agentResults.filter(function (x) { return x && x.stepId !== out.stepId; }).concat([out]);
+      try { step.outputHash = T.sha256Hex(T.canonicalJSON(out)); } catch (e2) { step.outputHash = null; }
+      step.provenance = {
+        tool: 'agent:' + (planStep.agentId || ''),
+        version: (out.provenance && out.provenance.promptVersion) || '1.0.0',
+        at: step.endedAt
+      };
+      if (opts.principal && opts.principal.profileId) step.provenance.profileId = opts.principal.profileId;
+      step.evidenceRefs = evRefs(out);
+      T.appendEvent(state, 'step.ok', {}, planStep.id);
+      return { ok: true, result: out, agentResult: out, agentId: out.agentId, evidenceRefs: step.evidenceRefs };
+    }
+
+    step.result = out;
+    if (!Array.isArray(state.agentResults)) state.agentResults = [];
+    state.agentResults = state.agentResults.filter(function (x) { return x && x.stepId !== out.stepId; }).concat([out]);
+    setFailure(step, 'agent_failed',
+      (out.errors && out.errors[0] && out.errors[0].message) || ('agent status: ' + out.status), false);
+    T.appendEvent(state, 'step.failed', { reason: 'agent_failed' }, planStep.id);
+    return { ok: false, critical: !!planStep.critical, reason: 'agent_failed', kind: 'agent_failed' };
+  }
+
   async function executeOne(planStep, state, opts) {
     var T = root.AstroTask;
     var step = stateStep(state, planStep.id);
@@ -470,6 +559,10 @@
       };
       T.appendEvent(state, 'step.cancelled', { reason: earlyTool.reason }, planStep.id);
       return { ok: false, aborted: true, critical: !!planStep.critical, reason: earlyTool.reason, kind: earlyTool.kind };
+    }
+
+    if (planStep && planStep.kind === 'agent') {
+      return executeAgentStep(planStep, state, opts, step, T);
     }
 
     step.status = 'running';
