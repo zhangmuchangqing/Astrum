@@ -2182,10 +2182,59 @@
    * 刷新恢复后同样由持久化 state 重建。 */
   var STEP_STATUS_LABEL = {
     pending: '等待', ready: '就绪', running: '运行中', ok: '完成',
-    failed: '失败', skipped: '跳过', blocked: '阻塞', aborted: '取消'
+    failed: '失败', skipped: '跳过', blocked: '阻塞', aborted: '取消',
+    waiting_approval: '待确认'
   };
 
-  function stepPanel(steps) {
+  /* R-03：恢复确认动作按钮。待审批卡片与步骤详情面板共用同一动作集，
+   * 只对 recovery_confirmation_required 步骤渲染，避免与 skill/claim 审批混淆。 */
+  function recoveryActionButtons(taskId, step, opts) {
+    opts = opts || {};
+    var wrap = el('span', 'step-actions');
+    var actions = [
+      { key: 'rerun', label: L('授权重跑') },
+      { key: 'reuse', label: L('确认复用') },
+      { key: 'abandon', label: L('放弃该步') }
+    ];
+    function setDisabled(v) {
+      Array.prototype.forEach.call(wrap.querySelectorAll('button'), function (b) { b.disabled = v; });
+    }
+    actions.forEach(function (a) {
+      var b = el('button', 'btn-ghost', a.label);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        setDisabled(true);
+        var store = opts.store || null;
+        if (!store && window.AstroTaskStore) {
+          try { store = window.AstroTaskStore.create({}); } catch (e) { store = null; }
+        }
+        window.AstroControlBridge.confirmRecovery(taskId, step.id, a.key, { store: store })
+          .then(function (r) {
+            if (!r || !r.confirmed) {
+              setDisabled(false);
+              toast(L((r && r.error) || 'CONFIRM_FAILED'));
+              return;
+            }
+            var fresh = null;
+            if (r.state && Array.isArray(r.state.steps)) {
+              r.state.steps.forEach(function (x) { if (x && x.id === step.id) fresh = x; });
+            }
+            if (fresh) { step.status = fresh.status; step.error = fresh.error; }
+            wrap.remove();
+            if (typeof opts.onConfirmed === 'function') opts.onConfirmed(a.key, r);
+            toast(L('已记录确认：') + a.label);
+          })
+          .catch(function () {
+            setDisabled(false);
+            toast(L('CONFIRM_FAILED'));
+          });
+      });
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+
+  function stepPanel(steps, state) {
     if (!steps || !steps.length) return null;
     var done = steps.filter(function (s) { return s.status === 'ok'; }).length;
     var box = el('details', 'step-panel');
@@ -2200,6 +2249,21 @@
       row.appendChild(el('span', 'step-state', esc(STEP_STATUS_LABEL[st] || st)));
       if (s.error && s.error.message) {
         row.appendChild(el('span', 'step-err', esc(String(s.error.message).slice(0, 80))));
+      }
+      /* R-03：步骤详情面板同样提供恢复确认入口（此前只在待审批卡片）。 */
+      if (s && st === 'waiting_approval' && s.error &&
+        s.error.kind === 'recovery_confirmation_required' && state && state.id &&
+        window.AstroControlBridge && typeof window.AstroControlBridge.confirmRecovery === 'function') {
+        row.appendChild(recoveryActionButtons(state.id, s, {
+          onConfirmed: function () {
+            var stateEl = row.querySelector('.step-state');
+            if (stateEl) stateEl.textContent = STEP_STATUS_LABEL[s.status] || s.status;
+            if (s.status !== 'waiting_approval') {
+              var errEl = row.querySelector('.step-err');
+              if (errEl) errEl.remove();
+            }
+          }
+        }));
       }
       box.appendChild(row);
     });
@@ -2315,7 +2379,7 @@
       } catch (e) { console.warn('research render failed', e); }
     }
     if (extra.state && Array.isArray(extra.state.steps)) {
-      var sp = stepPanel(extra.state.steps);
+      var sp = stepPanel(extra.state.steps, extra.state);
       if (sp) card.appendChild(sp);
     }
     if (ans.meta && ans.meta.styleSwitch) {
@@ -8533,38 +8597,17 @@
           if (confirmSteps.length && window.AstroControlBridge.confirmRecovery) {
             confirmSteps.forEach(function (s) {
               var line = el('div', 'resume-row');
-              var label = el('span', 'resume-q', esc(
+              line.appendChild(el('span', 'resume-q', esc(
                 L('步骤待确认') + '：' + (s.title || s.tool || s.id || '') +
                 (s.error && s.error.message ? ' — ' + esc(s.error.message) : '')
-              ));
-              line.appendChild(label);
-              [
-                { key: 'rerun', label: L('授权重跑') },
-                { key: 'reuse', label: L('确认复用') },
-                { key: 'abandon', label: L('放弃该步') }
-              ].forEach(function (a) {
-                var b = el('button', 'btn-ghost', a.label);
-                b.type = 'button';
-                b.addEventListener('click', function () {
-                  b.disabled = true;
-                  window.AstroControlBridge.confirmRecovery(
-                    item.meta.id, s.id, a.key, { store: store }
-                  ).then(function (r) {
-                    if (!r || !r.confirmed) {
-                      b.disabled = false;
-                      toast(L((r && r.error) || 'CONFIRM_FAILED'));
-                      return;
-                    }
-                    line.remove();
-                    if (a.key === 'reuse' && !card.querySelector('.resume-row')) box.remove();
-                    toast(L('已记录确认：') + a.label);
-                  }).catch(function () {
-                    b.disabled = false;
-                    toast(L('CONFIRM_FAILED'));
-                  });
-                });
-                line.appendChild(b);
-              });
+              )));
+              line.appendChild(recoveryActionButtons(item.meta.id, s, {
+                store: store,
+                onConfirmed: function (key) {
+                  line.remove();
+                  if (key === 'reuse' && !card.querySelector('.resume-row')) box.remove();
+                }
+              }));
               card.appendChild(line);
             });
           }

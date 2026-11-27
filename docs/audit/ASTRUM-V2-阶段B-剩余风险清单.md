@@ -26,8 +26,9 @@
 - 已修复：`AstroRecovery.decide()` 以 `provenance.recoveryConfirmation` 短路自动推导：人工确认复用不会被重复恢复翻回确认；`rerun` 标记带 `forAttempt`，超过该 attempt 后自动失效。
 - 已修复：`reuse` 把步骤从 `waiting_approval` 恢复为 `ok` 并清错误；`rerun` 走 `resetForRerun` 重置为 pending；`abandon` 置为 `blocked` 且错误改为 `operator_abandoned`，任务不静默完成。
 - 已修复：`AstroControlBridge.confirmRecovery()` 透传动作；UI 待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑 / 确认复用 / 放弃该步」入口，只针对恢复确认，不与 skill/claim 审批混淆。
-- 已验证：`tools/v2-recovery-confirmation-test.js` 17/17；权限拒绝、CAS 冲突、非法决策、非确认态、重复恢复均覆盖。
-- 残留：确认动作是「用户判断已核验」的人工出口，系统不独立核验远端真实状态（见 R-06b）；确认入口目前只在恢复卡片，步骤详情面板未单独提供。
+- 已修复（2026-11-27 补充）：步骤详情面板（`stepPanel`）同样提供恢复确认入口，与待审批卡片共用同一 `recoveryActionButtons` 动作集（同一授权、CAS、事件与错误处理路径）；确认成功后只更新该步骤的状态名与错误行，不重渲染整条答案。
+- 已验证：`tools/v2-recovery-confirmation-test.js` **30/30**（原 17 项行为 + R-11 区分 + R-03 面板入口 6 项结构断言）；权限拒绝、CAS 冲突、非法决策、非确认态、重复恢复均覆盖。
+- 残留：确认动作是「用户判断已核验」的人工出口，系统不独立核验远端真实状态（见 R-06b）；面板入口为 Node 无法驱动的 UI 装配，测试以静态结构断言 + 条件断言固定，未做真机点击 E2E。
 
 ## R-04 localStorage/memory 回退不具备跨标签页原子 CAS
 

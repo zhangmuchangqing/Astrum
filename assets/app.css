@@ -2983,6 +2983,8 @@ html[data-adapt="on"][data-w="narrow"] .hero h1 { letter-spacing: 0; }
 .step-tool { min-width: 110px; font-family: var(--mono); color: var(--ink); }
 .step-state { color: var(--muted-2); }
 .step-err { color: var(--danger, #b42318); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step-actions { display: inline-flex; gap: 6px; align-items: center; margin-left: auto; }
+.step-actions .btn-ghost { padding: 2px 8px; font-size: 12px; }
 .step-row.st-ok .step-state { color: var(--ok, #1a7f37); }
 .step-row.st-failed .step-state, .step-row.st-blocked .step-state { color: var(--danger, #b42318); }
 .step-row.st-running .step-state { color: var(--accent, #3b3bd6); }

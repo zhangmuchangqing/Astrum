@@ -160,7 +160,7 @@
 | `core/task.js` | `pauseRequestedAt`、`step.abort`、新事件类型与校验；R-03：新增 `task.recovery_confirmed` 事件类型 |
 | `core/task-store.js` | 原子 compare-and-write、事务内派生写入、本地回退原子段、摘要 `pauseRequested`；R-04：localStorage 后端 read-compare-write 包进 Web Locks（owner 命名空间锁名），健康信息暴露 `crossTabAtomic/lockMode`，锁回调异常转 rejection 保证释放；R-09：固化检查点裁剪为提交后独立事务、失败吞掉；R-10：`getHealth()` 暴露 `deprecatedUpdatedAtFallback/updatedAtFallbackUsed/lastUpdatedAtFallbackAt` 并对无 revision 保存记账 |
 | `core/control-bridge.js` | R-03：透传 `confirmRecovery` 到 `AstroControl`；R-07：新增 `pause(taskId, opts)`（含 principal/store 与 profile 归属校验）、透传 `onTask`、透传控制结果 `paused/pauseRequested/verdict`；R-08：新增 `reconcilePause()` 透传超时收尾（version 1.7.0） |
-| `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口；R-07：`controlAnswer()` 运行中 UI 新增「暂停」按钮并接入真实 `AstroControl.pause()`，按时序呈现 `PAUSE_REQUESTED → PAUSED`，消费暂停事件，暂停收尾不作为失败；R-08：恢复面板打开时先对 `pauseRequested && !paused` 任务调用 `reconcilePause` 收尾，再渲染列表，已收尾任务显示「已暂停」 |
+| `core/app.js` | R-03：待审批卡片对 `recovery_confirmation_required` 步骤显示「授权重跑/确认复用/放弃该步」入口；R-07：`controlAnswer()` 运行中 UI 新增「暂停」按钮并接入真实 `AstroControl.pause()`，按时序呈现 `PAUSE_REQUESTED → PAUSED`，消费暂停事件，暂停收尾不作为失败；R-08：恢复面板打开时先对 `pauseRequested && !paused` 任务调用 `reconcilePause` 收尾，再渲染列表，已收尾任务显示「已暂停」；R-03 补充：步骤详情面板（`stepPanel`）同样提供恢复确认入口，与卡片共用 `recoveryActionButtons` 动作集 |
 | `core/registry.js` | 工具 `abortable / sideEffect` 声明与列表暴露；R-01/R-02：`evidence.search`/`paper.search`/`llm.compose` 改 `abortable:true`，检索链路透传 `runtime.signal`，取消/暂停映射 `pendingAbort + pause + abortCode` |
 | `core/sources.js` | R-01/R-02：`searchMany → callEndpoint → withRetry → fetchJSON → fetch` 全链路贯穿 signal；取消后不再发起请求、不重试、不计入熔断 |
 | `tools/fake-idb.js` | 模拟真实 IndexedDB readwrite 串行隔离 |
@@ -180,7 +180,7 @@
 | `tools/v2-checkpoint-prune-test.js` | 新增（R-09）：裁剪事务 `delete` 故障注入下保存仍成功且 revision 递增、无部分删除、最新检查点可读；正常路径裁剪到 20；内存态检查点维持 20；17/17 PASS |
 | `tools/fake-idb.js` | 增加独立 `failNextDelete` 故障注入（只影响 delete，不影响权威保存的主事务 put）；R-04 串行隔离保持 |
 | `tools/v2-multi-tab-concurrency-test.js` | 扩展（R-10）：新增弃用标记、兜底计数、显式 revision 不计入断言；20/20 PASS |
-| `tools/v2-recovery-confirmation-test.js` | 扩展（R-11）：skill/claim 审批不被恢复确认处理、保持原状、无错误码/非等待态被拒、UI 只筛选恢复确认步骤；24/24 PASS |
+| `tools/v2-recovery-confirmation-test.js` | 扩展（R-11）：skill/claim 审批不被恢复确认处理、保持原状、无错误码/非等待态被拒、UI 只筛选恢复确认步骤；扩展（R-03）：步骤详情面板确认入口 6 项结构断言（传入 taskId、只匹配恢复确认、卡片/面板共用动作集、仍走 bridge、英文词条、样式）；30/30 PASS |
 | `tools/v2-recovery-idempotency-test.js` | 扩展（R-12）：短哈希=unverified、64-hex 不符=hash_mismatch、大写 64-hex 一致可复用；13/13 PASS |
 | `tools/v2-pause-timeout-reconcile-test.js` | 新增（R-08 收尾，2026-11-27）：暂停请求超时接管条件矩阵（未到时/仍有进展/无请求/已暂停均 noop）、收尾落盘（步骤回队、事件、检查点）、重复收尾幂等、CAS 冲突回滚不伪造、再次 pause 接管、本页活跃运行拒绝接管、存活运行页吸收 `pausedAt` 不被推翻；21/21 PASS |
 

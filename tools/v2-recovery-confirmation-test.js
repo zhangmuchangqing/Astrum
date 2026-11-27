@@ -236,6 +236,32 @@ function memStore(seed, opts) {
   ok('V2-R11-07 混合等待态整体仍标记为待审批',
     uiState.steps.some(function (s) { return s.status === 'waiting_approval'; }));
 
+  /* R-03 残留收口：步骤详情面板也提供恢复确认入口。
+   * 该入口是 UI 装配，Node 无 DOM，这里做静态结构断言，配合 V2-R11-06/07 的条件断言。 */
+  var fs = require('fs');
+  var appSrc = fs.readFileSync(path.join(ROOT, 'core/app.js'), 'utf8');
+  var i18nSrc = fs.readFileSync(path.join(ROOT, 'core/i18n.js'), 'utf8');
+  var cssSrc = fs.readFileSync(path.join(ROOT, 'assets/app.css'), 'utf8');
+  ok('V2-R03-UI-08 步骤面板接收任务状态（可拿到 taskId）',
+    /stepPanel\(extra\.state\.steps,\s*extra\.state\)/.test(appSrc));
+  ok('V2-R03-UI-09 面板入口只对 recovery_confirmation_required 渲染', (function () {
+    var i = appSrc.indexOf('function stepPanel');
+    var j = appSrc.indexOf('function answerNotesNode');
+    var seg = i >= 0 && j > i ? appSrc.slice(i, j) : '';
+    return seg.indexOf('recovery_confirmation_required') >= 0 && seg.indexOf('recoveryActionButtons') >= 0;
+  })());
+  ok('V2-R03-UI-10 卡片与步骤面板共用同一动作集（1 定义 + 2 调用）',
+    (appSrc.match(/recoveryActionButtons\(/g) || []).length >= 3);
+  ok('V2-R03-UI-11 动作仍走 AstroControlBridge.confirmRecovery',
+    /confirmRecovery\(taskId,\s*step\.id,\s*a\.key/.test(appSrc));
+  ok('V2-R03-UI-12 等待态有可读状态名且英文词条齐备',
+    /waiting_approval:\s*'待确认'/.test(appSrc) &&
+    i18nSrc.indexOf("'授权重跑': 'Rerun with approval'") >= 0 &&
+    i18nSrc.indexOf("'确认复用': 'Reuse confirmed'") >= 0 &&
+    i18nSrc.indexOf("'放弃该步': 'Abandon step'") >= 0 &&
+    i18nSrc.indexOf("'步骤待确认': 'Step needs confirmation'") >= 0);
+  ok('V2-R03-UI-13 步骤动作样式存在', /\.step-actions\s*\{/.test(cssSrc));
+
   console.log('\nRESULT ' + pass + '/' + (pass + fail));
   process.exit(fail ? 1 : 0);
 })().catch(function (e) {
