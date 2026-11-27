@@ -2410,6 +2410,10 @@
       main.appendChild(n);
     });
     if (main.children.length) card.appendChild(main);
+    /* 空答案兜底：无正文、无详情、无核验时给出明确说明，避免渲染成空白气泡。 */
+    else if (!detailSecs.length && !verifyList.length) {
+      card.appendChild(el('p', 'narr-body', esc('本次未生成可用表述。可展开「执行记录与核验」查看步骤与失败原因，或换一个更具体的问法。')));
+    }
     if (verifyList.length) {
       var vstrip = renderVerifyStrip(verifyList);
       if (vstrip) card.appendChild(vstrip);
