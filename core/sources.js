@@ -1266,8 +1266,17 @@
         });
       }
       return r.json().then(function (d) {
+        /* P2-3：200 不代表可用。部分供应商在模型名错误/权限不足时仍返回 200 +
+         * 空 content，旧逻辑会误判为「已连通」。这里必须校验实际正文。 */
+        var parsed = null;
+        try { parsed = parseRawResponse(id, d); } catch (e) { parsed = null; }
+        var text = parsed && parsed.text ? String(parsed.text).trim() : '';
+        if (!text) {
+          setStatus(id, 'error', '返回空内容');
+          throw new Error('返回空内容：请检查模型名、接口地址或密钥权限');
+        }
         setStatus(id, 'ready', '已连通');
-        return { ok: true, msg: '已连通 · ' + (Date.now() - t0) + 'ms' };
+        return { ok: true, msg: '已连通 · ' + text.slice(0, 20) + ' · ' + (Date.now() - t0) + 'ms' };
       });
     }).catch(function (e) {
       timer.done();

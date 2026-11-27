@@ -45,6 +45,8 @@
   if (/[?&]agentRuntime=1\b/.test(location.search)) {
     window.ASTRUM_AGENT_RUNTIME = true;
   }
+  /* 运行时自检的最近一次证据源体检结果（仅内存，不持久化） */
+  var LAST_DIAG = null;
 
   function load() {
     try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
@@ -2412,7 +2414,7 @@
     if (main.children.length) card.appendChild(main);
     /* 空答案兜底：无正文、无详情、无核验时给出明确说明，避免渲染成空白气泡。 */
     else if (!detailSecs.length && !verifyList.length) {
-      card.appendChild(el('p', 'narr-body', esc('本次未生成可用表述。可展开「执行记录与核验」查看步骤与失败原因，或换一个更具体的问法。')));
+      card.appendChild(el('p', 'narr-body', esc('本次未生成可用表述。可换个更具体的问法，或在设置中检查模型与证据源状态。')));
     }
     if (verifyList.length) {
       var vstrip = renderVerifyStrip(verifyList);
@@ -6116,6 +6118,56 @@
     tools.appendChild(exp); tools.appendChild(planCsv); tools.appendChild(imp); tools.appendChild(reset); tools.appendChild(file);
     dataGroup.appendChild(tools);
     pushSection('数据与核验', dataGroup);
+
+    /* P2-1：运行时自检。只读展示当前页面状态，帮助区分「模型空」「证据源不可用」「Agent 未开启」。 */
+    var rt = el('div', 'group');
+    rt.appendChild(el('div', 'note-box', '运行时自检：读取当前页面状态，不上传任何数据。'));
+    function rtRow(label, value, ok) {
+      var r = el('div', 'set-row');
+      r.innerHTML = '<div class="txt"><div class="t">' + esc(label) + '</div><div class="d">' + esc(value) + '</div></div>' +
+        '<div class="ctl"><span class="st ' + (ok ? 'st-established' : '') + '">' + (ok ? '正常' : '注意') + '</span></div>';
+      return r;
+    }
+    var rtSrc = state.settings.sourceId;
+    var rtConf = (S && S.conf ? S.conf(rtSrc) : null) || {};
+    var rtStatus = (S && S.statusOf ? S.statusOf(rtSrc) : null) || {};
+    var rtEx = null;
+    try {
+      rtEx = (window.AstroAgentExecutor && typeof window.AstroAgentExecutor.available === 'function')
+        ? window.AstroAgentExecutor.available() : null;
+    } catch (e) { rtEx = null; }
+    var rtOn = window.ASTRUM_AGENT_RUNTIME === true;
+    rt.appendChild(rtRow('Agent 运行时', rtOn ? '已开启' : '未开启（地址加 ?agentRuntime=1 生效）', rtOn));
+    rt.appendChild(rtRow('云模型', (rtStatus.msg || '未配置') + ' · ' + (rtConf.model || '—'), rtStatus.state === 'ready'));
+    rt.appendChild(rtRow('Agent 可用来源', rtEx || '无可用云端来源', !!rtEx));
+    var diagBox = el('div', 'note-box',
+      LAST_DIAG ? LAST_DIAG.map(function (x) {
+        return x.name + '：' + (x.ok ? '可用' : '失败') + (x.msg ? '（' + x.msg + '）' : '');
+      }).join('；') : '证据源体检：尚未执行');
+    rt.appendChild(diagBox);
+    var rtAct = el('div', 'ed-actions');
+    var btnM = el('button', 'btn-ghost', '体检模型');
+    btnM.addEventListener('click', function () {
+      btnM.disabled = true; btnM.textContent = '体检中…';
+      S.test(rtSrc).then(function (r) {
+        toast(r.ok ? '模型可用：{0}' : '模型失败：{0}', r.msg);
+      }).catch(function (e) {
+        toast('模型失败：{0}', (e && e.message) || '网络错误');
+      }).then(function () { renderSettings(); });
+    });
+    var btnE = el('button', 'btn-ghost', '体检证据源');
+    btnE.addEventListener('click', function () {
+      btnE.disabled = true; btnE.textContent = '体检中…';
+      S.diagnose().then(function (list) {
+        LAST_DIAG = list;
+        renderSettings();
+      }).catch(function (e) {
+        toast('体检失败：{0}', (e && e.message) || '网络错误');
+      });
+    });
+    rtAct.appendChild(btnM); rtAct.appendChild(btnE);
+    rt.appendChild(rtAct);
+    pushSection('运行时自检', rt);
     }
 
     if (DEBUG) {
