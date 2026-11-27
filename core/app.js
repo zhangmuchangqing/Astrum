@@ -2279,7 +2279,11 @@
   /* V2 P2：Agent 执行详情。数据只来自 state.agentResults 与 ans.meta.critic，
    * 未提供数据时不渲染，不生成任何模拟步骤或百分比。 */
   function agentPanel(state, ans) {
-    var list = (state && Array.isArray(state.agentResults)) ? state.agentResults : [];
+    /* 刷新后 extra.state 不可用，回退到答案里持久化的 execution 快照，
+     * 保证 Agent 执行记录在历史消息中仍可查看（真实数据，不是模拟）。 */
+    var exec = ans && ans.meta && ans.meta.execution;
+    var list = (state && Array.isArray(state.agentResults)) ? state.agentResults
+      : (exec && Array.isArray(exec.agentResults) ? exec.agentResults : []);
     var critic = ans && ans.meta && ans.meta.critic;
     if (!list.length && !critic) return null;
     var box = el('details', 'step-panel');
@@ -2426,11 +2430,17 @@
         if (rp) card.appendChild(rp);
       } catch (e) { console.warn('research render failed', e); }
     }
+    var execSnap = ans.meta && ans.meta.execution;
     if (extra.state && Array.isArray(extra.state.steps)) {
       var sp = stepPanel(extra.state.steps, extra.state);
       if (sp) card.appendChild(sp);
+    } else if (execSnap && Array.isArray(execSnap.steps) && execSnap.steps.length) {
+      var sp2 = stepPanel(execSnap.steps, {});
+      if (sp2) card.appendChild(sp2);
     }
-    if ((extra.state && Array.isArray(extra.state.agentResults)) || (ans.meta && ans.meta.critic)) {
+    var execAgentList = execSnap && Array.isArray(execSnap.agentResults) ? execSnap.agentResults : null;
+    if ((extra.state && Array.isArray(extra.state.agentResults) && extra.state.agentResults.length) ||
+        (execAgentList && execAgentList.length) || (ans.meta && ans.meta.critic)) {
       var ap = agentPanel(extra.state || {}, ans);
       if (ap) card.appendChild(ap);
     }
@@ -4075,6 +4085,22 @@
 
       function finish() {
         think.remove(); busy(false);
+        /* 把执行记录快照写进答案：刷新/恢复后仍能看到步骤与 Agent 结果，
+         * 且与 meta.taskId 对应，便于排查「为什么没有产出」。 */
+        if (ctrlState) {
+          r.answer.meta = r.answer.meta || {};
+          r.answer.meta.execution = {
+            taskId: ctrlState.id || null,
+            verdict: r.verdict || null,
+            steps: (ctrlState.steps || []).map(function (s) {
+              return {
+                id: s.id, tool: s.tool, kind: s.kind || null, status: s.status,
+                error: s.error || null, durationMs: s.durationMs || null
+              };
+            }),
+            agentResults: ctrlState.agentResults || []
+          };
+        }
         renderAnswer(r.answer, {
           control: true, verdict: r.verdict,
           state: ctrlState
