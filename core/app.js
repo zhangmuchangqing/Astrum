@@ -41,6 +41,10 @@
   var KEY = window.Profile ? Profile.ns('astrum.v2') : 'astrum.v2';
   /* 诊断信息只在 ?debug=1 时出现：普通用户不该看到错误栈与耗时 */
   var DEBUG = /[?&]debug=1\b/.test(location.search);
+  /* 显式 URL 开关：?agentRuntime=1 才启用 Agent 执行链；默认关闭，刷新即失效。 */
+  if (/[?&]agentRuntime=1\b/.test(location.search)) {
+    window.ASTRUM_AGENT_RUNTIME = true;
+  }
 
   function load() {
     try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
