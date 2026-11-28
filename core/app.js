@@ -2343,7 +2343,10 @@
   };
   function execSnapshotPanel(exec) {
     if (!exec) return null;
-    var box = el('details', 'step-panel');
+    /* 执行快照是「记录」，不是「真实步骤面板」：
+     * 两者曾共用 .step-panel，导致 simpleLike 把未执行的快照当成执行过程。
+     * 这里使用独立类名，语义与选择器彻底隔离。 */
+    var box = el('details', 'exec-snapshot-panel');
     box.open = false;
     var ov = exec.overallStatus || 'unknown';
     box.appendChild(el('summary', 'step-summary',
@@ -2538,7 +2541,7 @@
       card.appendChild(leg);
     }
     var execMetaNode = execSnapshotPanel(execSnap);
-    if (execMetaNode) card.appendChild(execMetaNode);
+    if (execMetaNode) card.appendChild(execMetaNode);   /* 稍后由 detachDirect 统一摘下 */
     if (ans.meta && ans.meta.styleSwitch) {
       var sw = el('div', 'recall');
       sw.innerHTML = '<span class="ic">↳</span>这题按「' + esc(ans.meta.styleSwitch.label) + '」风格回答（你的默认是「' + esc(PERSONAS[ans.meta.styleSwitch.from] ? PERSONAS[ans.meta.styleSwitch.from].label : '未设置') + '」）';
@@ -2564,6 +2567,9 @@
     var verifyNode = detachDirect('verify-fold');
     var researchNode = detachDirect('research-panel');
     var stepNode = detachDirect('step-panel');
+    /* 执行快照单独摘下：它不参与 simpleLike 判定（那是真实步骤的语义），
+     * 只在答案确实需要展示记录时随详情节区出现。 */
+    var execMetaNodeDetached = detachDirect('exec-snapshot-panel') || execMetaNode;
     var metaNode = detachDirect('meta-bar');
     var actionsNode = detachDirect('ans-acts');
     var recallNodes = Array.prototype.filter.call(card.children, function (x) {
@@ -2611,6 +2617,9 @@
     if (notesNode) detailNodes.unshift(notesNode);
     detailSecs.forEach(function (s) { detailNodes.push(sectionNode(s)); });
     if (stepNode) detailNodes.push(stepNode);
+    /* no_execution 且无真实步骤：简单答案不因该快照就展开详情；
+     * 复杂任务（simpleLike=false）仍会展开并显示这条状态记录。 */
+    if (execMetaNodeDetached) detailNodes.push(execMetaNodeDetached);
     recallNodes.forEach(function (x) { detailNodes.push(x); });
     var simpleLike = (CURRENT_MODE === 'A' || CURRENT_MODE === 'B') && !hasPapers &&
       !notesNode && !stepNode && !recallNodes.length;

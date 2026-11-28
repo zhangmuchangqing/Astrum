@@ -282,6 +282,10 @@ jobs:
       - name: 功能回归 selftest
         run: node tools/selftest.js "file://$PWD/index.html"
 
+      # 执行快照面板与真实步骤面板语义隔离（简单答案不展开 trace-fold）
+      - name: 执行快照面板 exec-snapshot
+        run: node tools/p2-exec-snapshot-test.js "file://$PWD/index.html"
+
       - name: 持久化 store-test
         run: node tools/store-test.js
 

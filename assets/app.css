@@ -2960,7 +2960,8 @@ html[data-adapt="on"][data-w="narrow"] .hero h1 { letter-spacing: 0; }
   max-width: 420px;
   word-break: break-all;
 }
-.step-panel {
+.step-panel,
+.exec-snapshot-panel {
   margin-top: 10px;
   border-top: 1px solid var(--line-soft);
   padding-top: 8px;
