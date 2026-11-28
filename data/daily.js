@@ -10,8 +10,8 @@
   'use strict';
 
   root.ASTRUM_DAILY = {
-    "updated": "2026-11-27",
-    "generatedAt": "2026-11-28T08:42:32.953Z",
+    "updated": "2026-11-28",
+    "generatedAt": "2026-11-28T08:42:49.477Z",
     "note": "每日 UTC 01:00 增量同步；内容未经本项目核验，不参与答案推理。",
     "papers": [
       {
@@ -35,7 +35,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34332",
@@ -57,7 +57,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34350",
@@ -79,7 +79,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34405",
@@ -102,7 +102,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34439",
@@ -124,7 +124,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34512",
@@ -147,7 +147,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34625",
@@ -169,7 +169,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34650",
@@ -191,7 +191,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34672",
@@ -214,7 +214,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34691",
@@ -237,7 +237,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34720",
@@ -260,7 +260,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34743",
@@ -283,7 +283,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34753",
@@ -306,7 +306,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34775",
@@ -329,7 +329,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34789",
@@ -352,7 +352,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34790",
@@ -375,7 +375,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34802",
@@ -398,7 +398,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34867",
@@ -419,7 +419,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34890",
@@ -441,7 +441,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.34910",
@@ -463,7 +463,7 @@
           "arXiv"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "id": "2611.32298",
@@ -7568,7 +7568,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "Deep beneath Australia, hidden caves could unlock the secrets of alien worlds",
@@ -7580,7 +7580,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-26",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "A space telescope hunting for dark matter just discovered something unexpected",
@@ -7592,7 +7592,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "Physicists trap antimatter in a breakthrough that could explain why the universe exists",
@@ -7604,7 +7604,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "Physicists just sent an unblockable message through a brick wall using gravity",
@@ -7616,7 +7616,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "A black hole the size of an atom could destroy an entire star",
@@ -7628,7 +7628,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-25",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "Ancient rocks from the Moon’s far side rewrite the Solar System’s violent past",
@@ -7652,7 +7652,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "A galactic shock wave could rewrite the map of the Milky Way",
@@ -7664,7 +7664,7 @@
           "ScienceDaily"
         ],
         "firstSeen": "2026-11-23",
-        "fetchedAt": "2026-11-27T13:23:49.587Z"
+        "fetchedAt": "2026-11-28T08:42:49.477Z"
       },
       {
         "title": "A mysterious gap hints at black holes born from stars that never exploded",
@@ -8286,18 +8286,6 @@
         "source": "ScienceDaily",
         "date": "2026-10-30",
         "url": "https://www.sciencedaily.com/releases/2026/10/261029072113.htm"
-      },
-      {
-        "title": "Ghostly Cat’s Head Nebula lurks within sight of Hubble and Webb",
-        "summary": "The NASA/ESA Hubble and the NASA/ESA/CSA James Webb Space Telescopes recently stared at an eerie star-forming scene within the Carina Nebula, a massive gas and…",
-        "source": "ESA",
-        "date": "2026-10-29",
-        "url": "https://www.esa.int/Science_Exploration/Space_Science/Webb/Ghostly_Cat_s_Head_Nebula_lurks_within_sight_of_Hubble_and_Webb",
-        "sources": [
-          "ESA"
-        ],
-        "firstSeen": "2026-10-29",
-        "fetchedAt": "2026-11-04T01:56:28.827Z"
       }
     ],
     "community": [
@@ -8351,13 +8339,13 @@
       }
     ],
     "sync": {
-      "lastAttemptAt": "2026-11-28T08:42:32.953Z",
-      "lastSuccessAt": "2026-11-27T13:23:49.587Z",
+      "lastAttemptAt": "2026-11-28T08:42:49.477Z",
+      "lastSuccessAt": "2026-11-28T08:42:49.477Z",
       "newPapers": 0,
-      "updatedPapers": 0,
+      "updatedPapers": 20,
       "newNews": 0,
       "totalPapers": 332,
-      "totalNews": 63,
+      "totalNews": 62,
       "sources": {
         "papers": [
           "astro-ph.GA(8)",
@@ -8376,9 +8364,9 @@
           "msg": "HTTP 404 https://www.esa.int/rssfeed/Our_Activities/Space_Science"
         }
       ],
-      "ok": null,
-      "partial": null,
-      "status": "running"
+      "ok": true,
+      "partial": true,
+      "status": "partial"
     }
   };
 })(typeof window !== 'undefined' ? window : this);
