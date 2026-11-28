@@ -38,7 +38,7 @@
     },
     'T-F': {
       label: 'controversy',
-      tools: ['simbad.tap', 'evidence.search', 'kepler.ephemeris', 'paper.search', 'agent.research'],
+      tools: ['simbad.tap', 'evidence.search', 'kepler.ephemeris', 'paper.search', 'agent.research', 'compose.domain'],
       compose: false,
       postCritic: true
     },
@@ -313,7 +313,12 @@
         agent.agentId = 'scholar';
         agent.tools = ['evidence.search', 'paper.search'];
         agent.objective = '围绕争议点检索正反证据并核验：' + b.query;
-        return [agent];
+        /* B3：Agent 成果必须经过统一整合入口，不能只产出 findings 就结束。
+         * compose 显式依赖 t1，确保 Agent 证据进入最终答案。 */
+        return [
+          agent,
+          makeStep('t2', 'compose.domain', { query: b.query, intent: b.intent, from: ['t1'] }, ['t1'], false, true, false)
+        ];
       }
       var steps = [];
       if (b.coord) steps.push(makeStep('t1', 'simbad.tap', { query: b.names[0] || b.query }, [], true, false, true));

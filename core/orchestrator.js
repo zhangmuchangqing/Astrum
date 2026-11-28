@@ -446,6 +446,22 @@
     return { ok: false, critical: !!planStep.critical, reason: step.error.message, kind: step.error.kind };
   }
 
+  /* B3：把 Agent 引用到的真实证据挂到步骤结果上，供 compose 的 collectEvidence
+   * 与 reducer 消费。只解析 state.evidence 中已存在的条目，不新建证据。 */
+  function withAgentEvidence(state, out) {
+    if (!out || !Array.isArray(out.evidenceIds) || !out.evidenceIds.length) return out;
+    var idx = {};
+    (state && state.evidence || []).forEach(function (e) {
+      if (e && e.evidenceId) idx[e.evidenceId] = e;
+    });
+    var items = out.evidenceIds.map(function (id) { return idx[id]; }).filter(Boolean);
+    if (!items.length) return out;
+    var copy = {};
+    Object.keys(out).forEach(function (k) { copy[k] = out[k]; });
+    copy.items = items;
+    return copy;
+  }
+
   /* V2 P0-C：Agent 步骤执行。模型只能提出工具调用，执行统一走 ToolGateway。
    * 默认不启用；仅在 Control 显式开关且存在可用云模型来源时才会进入。 */
   async function executeAgentStep(planStep, state, opts, step, T) {
@@ -491,7 +507,42 @@
     step.durationMs = durationOf(step.startedAt, step.endedAt);
 
     if (!out) {
-      setFailure(step, 'agent_failed', (err && err.message) || 'agent failed', false);
+      /* B2：执行器抛异常时也必须留下可追溯的失败成果，
+       * 不能让 agentResults 丢失、让 UI 误判为“从未执行”。 */
+      var errMsg = (err && err.message) || 'agent failed';
+      var failed = null;
+      var AR = root.AstroAgentResult;
+      if (AR && typeof AR.create === 'function') {
+        failed = AR.create({
+          taskId: state.id,
+          stepId: planStep.id,
+          agentId: planStep.agentId || '',
+          status: 'failed',
+          objective: planStep.objective || (planStep.args && planStep.args.query) || '',
+          startedAt: step.startedAt ? Date.parse(step.startedAt) : Date.now(),
+          completedAt: Date.now(),
+          toolCalls: [],
+          findings: [],
+          evidenceIds: [],
+          limitations: ['执行器抛出异常，未产生可用成果'],
+          errors: [{ code: 'agent_failed', message: String(errMsg).slice(0, 300), retriable: false }],
+          provenance: {
+            provider: opts.sourceId || null, model: null,
+            promptVersion: '', tools: planStep.tools || []
+          }
+        });
+      } else {
+        failed = {
+          taskId: state.id, stepId: planStep.id, agentId: planStep.agentId || '',
+          status: 'failed', findings: [], evidenceIds: [], toolCalls: [],
+          errors: [{ code: 'agent_failed', message: String(errMsg).slice(0, 300) }]
+        };
+      }
+      step.result = failed;
+      if (!Array.isArray(state.agentResults)) state.agentResults = [];
+      state.agentResults = state.agentResults
+        .filter(function (x) { return x && x.stepId !== failed.stepId; }).concat([failed]);
+      setFailure(step, 'agent_failed', errMsg, false);
       T.appendEvent(state, 'step.failed', { reason: 'agent_failed' }, planStep.id);
       return { ok: false, critical: !!planStep.critical, reason: 'agent_failed', kind: 'agent_failed' };
     }
@@ -504,7 +555,7 @@
     }
     if (out.status === 'completed' || out.status === 'partial') {
       step.status = 'ok';
-      step.result = out;
+      step.result = withAgentEvidence(state, out);
       /* P2：Agent 成果落盘到任务状态，供 UI 只读展示（不新建数据源）。 */
       if (!Array.isArray(state.agentResults)) state.agentResults = [];
       state.agentResults = state.agentResults.filter(function (x) { return x && x.stepId !== out.stepId; }).concat([out]);
@@ -520,7 +571,7 @@
       return { ok: true, result: out, agentResult: out, agentId: out.agentId, evidenceRefs: step.evidenceRefs };
     }
 
-    step.result = out;
+    step.result = withAgentEvidence(state, out);
     if (!Array.isArray(state.agentResults)) state.agentResults = [];
     state.agentResults = state.agentResults.filter(function (x) { return x && x.stepId !== out.stepId; }).concat([out]);
     setFailure(step, 'agent_failed',

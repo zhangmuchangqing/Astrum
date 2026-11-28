@@ -1429,8 +1429,16 @@
       .then(function (r) {
         timer.done();
         if (!r.ok) {
-          return r.text().then(function (t) { throw httpError(r.status, t); },
-            function () { throw httpError(r.status, ''); });
+          var ra = r.headers && r.headers.get ? r.headers.get('retry-after') : null;
+          return r.text().then(function (t) {
+            var he = httpError(r.status, t);
+            if (ra) he.retryAfter = ra;
+            throw he;
+          }, function () {
+            var he2 = httpError(r.status, '');
+            if (ra) he2.retryAfter = ra;
+            throw he2;
+          });
         }
         return r.json();
       }).catch(function (e) {
@@ -1569,9 +1577,10 @@
   /* OpenAlex：学术文献，ACAO: * */
   function openAlex(q, signal) {
     var u = 'https://api.openalex.org/works?search=' + encodeURIComponent(enQueryFor(q)) +
-      '&per-page=3&mailto=astrum@users.noreply.github.com';
+      '&per-page=3&mailto=astrum@users.noreply.github.com' +
+      (providerConf('openalex').key ? '&api_key=' + encodeURIComponent(providerConf('openalex').key) : '');
     /* 相关度排序的默认行为即可；最新发现类问题由上层按 date 再排 */
-    return fetchJSON(u, 8000, signal).then(function (d) {
+    return fetchJSONBackoff(u, 8000, signal).then(function (d) {
       return (d.results || []).slice(0, 3).map(function (w) {
         var abs = invAbstract(w.abstract_inverted_index);
         var authors = ((w.authorships || []).map(function (a) {
@@ -1717,6 +1726,201 @@
     });
   }
 
+  /* ---------- 学术 Provider：配置、退避、arXiv、ADS ----------
+   * 统一约定：provider 只负责「取回真实条目」，不生成、不补造字段。
+   * 失败一律抛出带 cls 的错误，供上层分类与降级。 */
+  function providerConf(id) {
+    return (state && state.config && state.config[id]) || {};
+  }
+  function retryAfterMs(ra) {
+    if (ra == null || ra === '') return 0;
+    var n = Number(ra);
+    if (isFinite(n) && n >= 0) return Math.min(n * 1000, 4000);
+    var t = Date.parse(String(ra));
+    return isFinite(t) ? Math.max(0, Math.min(t - Date.now(), 4000)) : 0;
+  }
+  /* OpenAlex/S2 匿名池 429 是常态：读 Retry-After 做一次有上限退避，
+   * 不无限重试，也不把限流当成「服务不可用」。 */
+  function fetchJSONBackoff(url, ms, signal) {
+    return fetchJSON(url, ms, signal).catch(function (e) {
+      if (!(e && e.status === 429)) throw e;
+      return defer(retryAfterMs(e.retryAfter) || 1200, function () {
+        return fetchJSON(url, ms, signal);
+      });
+    });
+  }
+  function fetchText(url, ms, signal, headers) {
+    var timer = withTimeout(ms || 8000, signal);
+    return fetch(url, {
+      signal: timer.signal, cache: 'no-store',
+      headers: Object.assign({ Accept: 'application/atom+xml,text/xml,*/*', 'Accept-Language': 'en' }, headers || {})
+    }).then(function (r) {
+      timer.done();
+      if (!r.ok) {
+        return r.text().then(function (t) { throw httpError(r.status, t); },
+          function () { throw httpError(r.status, ''); });
+      }
+      return r.text();
+    }).catch(function (e) {
+      timer.done();
+      /* 与 fetchJSON 一致：CSP 拦截必须单独分类，不能当成普通网络错误。 */
+      if (!looksLikeFetchFailure(e && e.message)) throw e;
+      return defer(80, function () {
+        if (cspBlocked(url, 2000)) {
+          var ce = new Error(cspMessage(url));
+          ce.cls = { kind: 'csp', msg: ERR_KIND.csp, retryable: false };
+          ce.csp = true;
+          throw ce;
+        }
+        throw e;
+      });
+    });
+  }
+  function fetchJSONAuth(url, token, ms, signal) {
+    var timer = withTimeout(ms || 9000, signal);
+    return fetch(url, {
+      signal: timer.signal, cache: 'no-store',
+      headers: {
+        Accept: 'application/json', 'Accept-Language': 'en',
+        Authorization: 'Bearer ' + token
+      }
+    }).then(function (r) {
+      timer.done();
+      if (!r.ok) return r.text().then(function (t) { throw httpError(r.status, t); },
+        function () { throw httpError(r.status, ''); });
+      return r.json();
+    }).catch(function (e) { timer.done(); throw e; });
+  }
+  function xmlInner(block, tag) {
+    var m = String(block || '').match(new RegExp('<' + tag + '[^>]*>([\\s\\S]*?)<\\/' + tag + '>'));
+    return m ? crossrefText(m[1]) : '';
+  }
+
+  /* arXiv Atom API（无需 Key，浏览器可直连 export.arxiv.org） */
+  function arxivSearch(q, signal) {
+    var eq = enQueryFor(q);
+    if (!eq) return Promise.resolve([]);
+    var u = 'https://export.arxiv.org/api/query?search_query=all:' +
+      encodeURIComponent(eq) + '&start=0&max_results=3';
+    return fetchText(u, 9000, signal).then(function (xml) {
+      var blocks = String(xml || '').split('<entry>').slice(1);
+      return blocks.map(function (block) {
+        var title = xmlInner(block, 'title');
+        var summary = xmlInner(block, 'summary');
+        if (!title) return null;
+        var id = xmlInner(block, 'id');
+        var arxivId = (id.match(/abs\/([^<\s]+)/) || [])[1] || '';
+        var published = xmlInner(block, 'published');
+        var authors = (block.match(/<name>([\s\S]*?)<\/name>/g) || [])
+          .map(function (x) { return crossrefText(x.replace(/<\/?name>/g, '')); })
+          .filter(Boolean);
+        var o = blankItem();
+        o.title = title;
+        o.snippet = shortText(summary, 180);
+        o.excerpt = shortText(summary, 1600);
+        o.url = id || (arxivId ? 'https://arxiv.org/abs/' + arxivId : '');
+        o.host = 'arxiv.org';
+        o.date = published ? published.slice(0, 10) : null;
+        o.dateKind = o.date ? 'published' : null;
+        o.sourceType = 'paper';
+        o.doi = '';
+        o.version = 'preprint';
+        o.uncertainty = findUncertainty(summary);
+        o.authors = authors.slice(0, 6);
+        o.extra = {
+          venue: 'arXiv', arxivId: arxivId,
+          pdfUrl: arxivId ? 'https://arxiv.org/pdf/' + arxivId : ''
+        };
+        return o;
+      }).filter(function (x) { return x && x.title && x.snippet; }).slice(0, 3);
+    });
+  }
+
+  /* ADS：必须配置 Token；未配置时明确报 auth，而不是伪装成网络失败。 */
+  function adsSearch(q, signal) {
+    var c = providerConf('ads');
+    var token = c.token || c.key || '';
+    if (!token) {
+      var ae = new Error('未配置 ADS Token');
+      ae.cls = { kind: 'auth', msg: '未配置 ADS Token', retryable: false };
+      return Promise.reject(ae);
+    }
+    var eq = enQueryFor(q);
+    if (!eq) return Promise.resolve([]);
+    var u = 'https://api.adsabs.harvard.edu/v1/search/query?q=' +
+      encodeURIComponent('abs:"' + eq + '"') +
+      '&fl=title,abstract,author,year,doi,identifier,pubdate&rows=3';
+    return fetchJSONAuth(u, token, 9000, signal).then(function (d) {
+      var docs = (d && d.response && d.response.docs) || [];
+      return docs.map(function (p) {
+        var title = String((p.title && p.title[0]) || '').trim();
+        if (!title) return null;
+        var abs = String((p.abstract || '') + '').trim();
+        var doi = (p.doi && p.doi[0]) || '';
+        var arx = (p.identifier || []).filter(function (s) { return /^arXiv:/i.test(s); })[0] || '';
+        var o = blankItem();
+        o.title = title;
+        o.snippet = shortText(abs || title, 180);
+        o.excerpt = shortText(abs || title, 1600);
+        o.url = doi ? 'https://doi.org/' + doi : (arx ? 'https://arxiv.org/abs/' + arx.replace(/^arXiv:/i, '') : '');
+        o.host = 'ui.adsabs.harvard.edu';
+        o.date = p.pubdate ? String(p.pubdate).slice(0, 10) : (p.year ? String(p.year) : null);
+        o.dateKind = o.date ? 'published' : null;
+        o.sourceType = 'paper';
+        o.doi = doi;
+        o.version = arx ? 'preprint' : versionOf({ type: '', title: title }, doi);
+        o.uncertainty = findUncertainty(abs);
+        o.authors = (Array.isArray(p.author) ? p.author : []).slice(0, 6);
+        o.extra = { venue: 'ADS', arxivId: arx.replace(/^arXiv:/i, ''), pdfUrl: '' };
+        return o;
+      }).filter(Boolean).slice(0, 3);
+    });
+  }
+
+  /* ---------- Provider 连通性探针 ----------
+   * 用确定存在的 DOI/查询做「服务是否可达」探测，与「检索是否命中」分开。
+   * 返回 { state, ok, msg }；state ∈ healthy/rate_limited/unauthorized/
+   * forbidden/unreachable/timeout/no_results/unavailable。 */
+  var PROBE_DOI = '10.1051/0004-6361/201833910';
+  function probeByJSON(url, ms) {
+    return fetchJSON(url, ms || 7000).then(function () {
+      return { state: 'healthy', ok: true, msg: '服务可用' };
+    }).catch(function (e) {
+      var cls = e && e.cls ? e.cls : classifyError(e);
+      var st = 'unreachable';
+      if (cls.kind === 'rate_limit') st = 'rate_limited';
+      else if (cls.kind === 'auth') st = 'unauthorized';
+      else if (cls.kind === 'timeout') st = 'timeout';
+      else if (cls.kind === 'cors' || cls.kind === 'csp') st = 'unreachable';
+      return { state: st, ok: false, msg: cls.msg || '不可达' };
+    });
+  }
+  function probeOpenAlex() {
+    return probeByJSON('https://api.openalex.org/works/https://doi.org/' + PROBE_DOI + '?select=id,title', 8000);
+  }
+  function probeCrossref() {
+    return probeByJSON('https://api.crossref.org/works/' + PROBE_DOI, 8000);
+  }
+  function probeS2() {
+    return probeByJSON('https://api.semanticscholar.org/graph/v1/paper/DOI:' + PROBE_DOI + '?fields=title', 8000);
+  }
+  function probeArxiv() {
+    return fetchText('https://export.arxiv.org/api/query?search_query=all:Planck&max_results=1', 9000).then(function (xml) {
+      return /<entry>/.test(String(xml || ''))
+        ? { state: 'healthy', ok: true, msg: '服务可用' }
+        : { state: 'no_results', ok: true, msg: '服务可用 · 探测未命中' };
+    }).catch(function (e) {
+      var cls = e && e.cls ? e.cls : classifyError(e);
+      return { state: cls.kind === 'timeout' ? 'timeout' : 'unreachable', ok: false, msg: cls.msg || '不可达' };
+    });
+  }
+  function probeAds() {
+    var c = providerConf('ads');
+    if (!(c.token || c.key)) {
+      return Promise.resolve({ state: 'unavailable', ok: false, msg: '未配置 ADS Token' });
+    }
+    return probeByJSON('https://api.adsabs.harvard.edu/v1/search/query?q=*&rows=1', 8000);
+  }
   /* 维基百科 Core REST（CORS 回显 origin；部分地区不可达）
    * 超时设 5s：该域名在部分网络下完全不通，过长会拖垮整轮检索预算。 */
   function wikiCore(q, signal) {
@@ -1837,13 +2041,26 @@
    *   image       机构影像
    * 注意：priority 只决定同一类型内的尝试顺序，不再决定「谁先成功就用谁」。 */
   var ENDPOINT_CHAIN = [
-    { id: 'openalex', name: 'OpenAlex', fn: openAlex, kind: '学术文献', types: ['paper'], priority: 1 },
-    { id: 'crossref', name: 'Crossref', fn: crossrefSearch, kind: '学术文献', types: ['paper'], priority: 2 },
+    { id: 'openalex', name: 'OpenAlex', fn: openAlex, probe: probeOpenAlex, kind: '学术文献', types: ['paper'], priority: 1 },
+    { id: 'crossref', name: 'Crossref', fn: crossrefSearch, probe: probeCrossref, kind: '学术文献', types: ['paper'], priority: 2 },
     { id: 'nasa', name: 'NASA 图库', fn: nasaSearch, kind: '天文影像', types: ['image'], priority: 2 },
     { id: 'wikimedia', name: '维基百科', fn: wikiCore, kind: '百科条目', types: ['encyclopedia'], priority: 1 },
-    { id: 'semanticscholar', name: 'Semantic Scholar', fn: semanticScholar, kind: '学术文献', types: ['paper'], priority: 3 },
+    { id: 'semanticscholar', name: 'Semantic Scholar', fn: semanticScholar, probe: probeS2, kind: '学术文献', types: ['paper'], priority: 3 },
+    { id: 'arxiv', name: 'arXiv', fn: arxivSearch, probe: probeArxiv, kind: '学术文献', types: ['paper'], priority: 3 },
+    { id: 'ads', name: 'ADS', fn: adsSearch, probe: probeAds, kind: '学术文献', types: ['paper'], priority: 4, requiresToken: true },
     { id: 'wiki-action', name: '维基百科（备用）', fn: wikiAction, kind: '百科条目', types: ['encyclopedia'], priority: 2 }
   ];
+
+  /* 需要 Token 的 Provider 未配置时直接跳过检索（探针仍会显示 unavailable）。 */
+  function providerEnabled(ep) {
+    if (!ep) return false;
+    if (ep.requiresToken) {
+      var c = providerConf(ep.id);
+      return !!(c.token || c.key);
+    }
+    return true;
+  }
+  var ACTIVE_CHAIN = function () { return ENDPOINT_CHAIN.filter(providerEnabled); };
 
   function endpointById(id) {
     return ENDPOINT_CHAIN.filter(function (e) { return e.id === id; })[0] || null;
@@ -1961,10 +2178,10 @@
     }
     var gate = allow('search');
     if (!gate.ok) return Promise.reject(new Error(gate.msg));
-    var errors = [], tried = [], i = 0;
+    var errors = [], tried = [], i = 0, chain = ACTIVE_CHAIN();
 
     function step() {
-      if (i >= ENDPOINT_CHAIN.length) {
+      if (i >= chain.length) {
         setStatus('web', 'error', '全部端点不可用');
         var e = new Error(errors.join('；') || '各端点均无结果');
         e.fatal = true;
@@ -1972,7 +2189,7 @@
         e.tried = tried;
         return Promise.reject(e);
       }
-      var ep = ENDPOINT_CHAIN[i++];
+      var ep = chain[i++];
       return callEndpoint(ep, q).then(function (r) {
         cachePut(q, r.items, r.name);
         setStatus('web', 'ready', '在线 · ' + r.name);
@@ -2018,12 +2235,12 @@
     var signal = opts.signal || null;
     var t0 = Date.now();
 
-    /* 只用与所需类型匹配的端点；同类型内按 priority 取前面的 */
-    var eps = ENDPOINT_CHAIN.filter(function (ep) {
+    /* 只用与所需类型匹配且已配置的端点；同类型内按 priority 取前面的 */
+    var eps = ACTIVE_CHAIN().filter(function (ep) {
       if (!wantTypes) return true;
       return ep.types.some(function (t) { return wantTypes.indexOf(t) >= 0; });
     });
-    if (!eps.length) eps = ENDPOINT_CHAIN.slice();
+    if (!eps.length) eps = ACTIVE_CHAIN();
 
     var gate = opts.internal ? { ok: true } : allow('search');
     if (!gate.ok) {
@@ -2077,16 +2294,62 @@
         ce.cls = { kind: 'cancelled', msg: '已取消', retryable: false };
         throw ce;
       }
-      setStatus('web', items.length ? 'ready' : 'error',
-        items.length ? '在线 · ' + eps.map(function (e) { return e.name; }).join('/') : '全部端点不可用');
+      /* C6：跨源去重（DOI → arXiv → 归一题名），保留首条并记录重复数。 */
+      var deduped = dedupeItems(items);
+      /* C6：每个 Provider 本次的可用/命中/失败统计，供可观测性消费。 */
+      var providerStats = eps.map(function (ep) {
+        var got = deduped.items.filter(function (it) { return it && it.endpoint === ep.id; }).length;
+        var errs = errors.filter(function (x) { return x && x.endpoint === ep.id; });
+        /* 「查询没命中」不是 Provider 故障：单独记为 no_results。 */
+        var onlyEmpty = errs.length > 0 && errs.every(function (x) {
+          return x.kind === 'empty' || x.kind === 'notfound' || x.kind === 'no_results';
+        });
+        var st = errs.length ? (onlyEmpty ? 'no_results' : 'failed') : (got ? 'healthy' : 'no_results');
+        if (errs.some(function (x) { return x.kind === 'rate_limit'; })) st = 'rate_limited';
+        else if (errs.some(function (x) { return x.kind === 'cooling'; })) st = 'cooling';
+        return {
+          id: ep.id, name: ep.name, state: st, contributed: got,
+          ms: errs.length && errs[0].ms ? errs[0].ms : null,
+          msg: errs.length ? errs[0].msg : (got ? '命中 ' + got + ' 条' : '无匹配结果')
+        };
+      });
+      setStatus('web', deduped.items.length ? 'ready' : 'error',
+        deduped.items.length ? '在线 · ' + eps.map(function (e) { return e.name; }).join('/') : '全部端点不可用');
       return {
-        items: items, calls: calls, errors: errors,
+        items: deduped.items, calls: calls, errors: errors,
+        duplicates: deduped.duplicates,
+        providerStats: providerStats,
         truncated: truncated,
         budgetExhausted: Date.now() - t0 > budgetMs,
         ms: Date.now() - t0,
         endpoints: eps.map(function (e) { return e.id; })
       };
     });
+  }
+
+  /* 跨 Provider 去重：优先 DOI，其次 arXiv，最后归一化题名。
+   * 只合并元数据条目；全文分块（chunkId）不参与合并。 */
+  function dedupeItems(items) {
+    var seen = {}, out = [], duplicates = 0;
+    (items || []).forEach(function (it) {
+      if (!it) return;
+      if (it.content && it.content.chunkId) { out.push(it); return; }
+      var key = '';
+      var doi = String(it.doi || (it.content && it.content.doi) || '')
+        .replace(/^https?:\/\/(dx\.)?doi\.org\//, '').trim().toLowerCase();
+      var arx = String((it.extra && it.extra.arxivId) || '').trim().toLowerCase();
+      if (doi) key = 'doi:' + doi;
+      else if (arx) key = 'arxiv:' + arx;
+      else {
+        var t = String(it.title || '').toLowerCase()
+          .replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim();
+        if (t.length >= 12) key = 'title:' + t;
+      }
+      if (key && seen[key]) { duplicates++; return; }
+      if (key) seen[key] = 1;
+      out.push(it);
+    });
+    return { items: out, duplicates: duplicates };
   }
 
   /* ---------- 频率限制：联网检索与云端调用分别限流 ---------- */
@@ -2120,6 +2383,9 @@
   }
 
   /* 逐个端点体检，供界面展示「为什么连不上」 */
+  /* 逐个 Provider 体检。
+   * 有 probe 的用确定性探测（DOI/固定查询）判断「服务是否可达」；
+   * 没有 probe 的才退回检索探测，并把「无匹配」与「不可用」分开。 */
   function diagnose() {
     return Promise.all(ENDPOINT_CHAIN.map(function (pv) {
       var t0 = Date.now();
@@ -2129,13 +2395,32 @@
           msg: '熔断冷却中，' + Math.ceil((health(pv.id).cooldownUntil - Date.now()) / 1000) + ' 秒后再试'
         });
       }
+      if (pv.probe) {
+        return pv.probe().then(function (p) {
+          var ms = Date.now() - t0;
+          if (p.state === 'healthy') healthOk(pv.id, ms);
+          else if (p.state !== 'no_results' && p.state !== 'unavailable') {
+            healthFail(pv.id, { kind: p.state, msg: p.msg }, ms);
+          }
+          return {
+            name: pv.name, id: pv.id, ok: p.state === 'healthy' || p.state === 'no_results',
+            ms: ms, state: p.state, kind: p.state, msg: p.msg
+          };
+        }).catch(function (e) {
+          var cls = e.cls || classifyError(e);
+          healthFail(pv.id, cls, Date.now() - t0);
+          return { name: pv.name, id: pv.id, ok: false, ms: Date.now() - t0, state: 'failed', kind: cls.kind, msg: cls.msg };
+        });
+      }
       return pv.fn('猎户座').then(function (items) {
-        if (items && items.length) healthOk(pv.id, Date.now() - t0);
-        else healthFail(pv.id, { kind: 'empty', msg: ERR_KIND.empty }, Date.now() - t0);
+        var got = Array.isArray(items) ? items : [];
+        /* 无匹配只说明这个探测词没命中，不代表服务不可用；不累计熔断。 */
+        if (got.length) healthOk(pv.id, Date.now() - t0);
         return {
-          name: pv.name, id: pv.id, ok: !!(items && items.length), ms: Date.now() - t0,
-          state: items && items.length ? 'ok' : 'empty',
-          msg: items && items.length ? '可用' : '无匹配结果'
+          name: pv.name, id: pv.id, ok: got.length > 0, ms: Date.now() - t0,
+          state: got.length ? 'healthy' : 'no_results',
+          kind: got.length ? null : 'no_results',
+          msg: got.length ? '可用' : '服务可用 · 探测词未命中'
         };
       }).catch(function (e) {
         var cls = e.cls || classifyError(e);

@@ -20,6 +20,7 @@
   var DEFS = {
     scholar: {
       id: 'scholar',
+      executable: true,
       promptVersion: 'scholar.v1',
       tools: ['paper.search', 'evidence.search'],
       system: [
@@ -31,12 +32,16 @@
     },
     curator: {
       id: 'curator',
+      executable: false,
+      unavailableReason: '尚无独立执行器：仅可被其他步骤引用，不能单独调度',
       promptVersion: 'curator.v1',
       tools: [],
       system: '你是 ASTRUM 的资料整理 Agent。只能整理已提供的材料，不得新增事实。'
     },
     muse: {
       id: 'muse',
+      executable: false,
+      unavailableReason: '尚无独立执行器：仅可被其他步骤引用，不能单独调度',
       promptVersion: 'muse.v1',
       tools: [],
       system: '你是 ASTRUM 的研究协调 Agent。只能基于已有工具结果作答，不得编造。'
@@ -121,6 +126,22 @@
     if (!raw) return [];
     if (Array.isArray(raw.evidenceIds)) return raw.evidenceIds.slice();
     return arr(raw.items).map(function (x) { return x && x.evidenceId; }).filter(Boolean);
+  }
+
+  /* B3：把工具真实返回的证据落进状态，供后续 compose 解析 evidenceIds。
+   * 只接受带 evidenceId 的条目，按 evidenceId 去重，不新建、不改写证据。 */
+  function persistEvidence(state, items) {
+    if (!state) return;
+    if (!Array.isArray(state.evidence)) state.evidence = [];
+    var seen = {};
+    arr(state.evidence).forEach(function (e) {
+      if (e && e.evidenceId) seen[e.evidenceId] = 1;
+    });
+    arr(items).forEach(function (it) {
+      if (!it || !it.evidenceId || seen[it.evidenceId]) return;
+      seen[it.evidenceId] = 1;
+      state.evidence.push(it);
+    });
   }
 
   function summarizeToolResult(raw) {
@@ -272,7 +293,12 @@
 
         if (!resp || resp.status === 'aborted') { status = 'cancelled'; limitations.push('执行被取消'); break; }
         if (resp.status !== 'completed') {
-          errors.push({ code: (resp.error && resp.error.code) || 'MODEL_ERROR', message: (resp.error && resp.error.message) || '模型调用失败' });
+          var failCode = (resp.error && resp.error.code) || 'MODEL_ERROR';
+          errors.push({ code: failCode, message: (resp.error && resp.error.message) || '模型调用失败' });
+          /* B1：失败原因归一，避免所有模型失败都落到同一个通用状态。 */
+          if (failCode === 'TIMEOUT') status = 'timeout';
+          else if (failCode === 'RATE_LIMITED') status = 'blocked';
+          else if (failCode === 'CANCELLED') status = 'cancelled';
           break;
         }
         if (!resp.toolCalls || !resp.toolCalls.length) { finalText = resp.text || ''; status = 'completed'; break; }
@@ -320,7 +346,10 @@
           rec.status = ok ? 'ok' : 'failed';
           rec.evidenceIds = ok ? evidenceIdsOf(raw) : [];
           if (!ok) rec.error = (raw && raw.error) || { code: 'TOOL_FAILED', message: '工具执行失败' };
-          if (ok) collectedEvidence = collectedEvidence.concat(rec.evidenceIds);
+          if (ok) {
+            collectedEvidence = collectedEvidence.concat(rec.evidenceIds);
+            persistEvidence(state, raw && raw.items);
+          }
           messages.push({
             role: 'tool', toolCallId: tc.id, name: tc.name,
             content: sanitize(summarizeToolResult(raw))
@@ -432,12 +461,27 @@
       .slice(0, TOOL_RESULT_CHARS);
   }
 
+  /* B4：能力矩阵。声明为可执行的 Agent 必须有真实 run 路径；
+   * 其余显式标 unavailable，避免把“有定义”当成“可调度”。 */
+  function capability(agentId) {
+    var def = DEFS[agentId] || null;
+    if (def && def.executable === true) {
+      return { agentId: agentId, executable: true, reason: null };
+    }
+    return {
+      agentId: agentId || '',
+      executable: false,
+      reason: (def && def.unavailableReason) || '未注册的 Agent，无执行器'
+    };
+  }
+
   root.AstroAgentExecutor = {
     version: VERSION,
     MAX_TURNS: MAX_TURNS,
     MAX_TOOL_CALLS: MAX_TOOL_CALLS,
     DEFS: DEFS,
     available: available,
+    capability: capability,
     aliasOf: aliasOf,
     run: run
   };

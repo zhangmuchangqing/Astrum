@@ -188,12 +188,21 @@
     function researchOf(args, depResults, ids) {
       var got = collectEvidence(args, depResults, ids);
       if (!got.evidence.length) return null;
+      /* B3：Agent 步骤成果也进入统一整合。只做只读引用，
+       * evidenceIds 必须已在证据集中（executor 已落盘真实工具结果）。 */
+      var agentResults = [];
+      var deps = depResults || {};
+      (ids || Object.keys(deps)).forEach(function (id) {
+        var r = deps[id];
+        if (r && r.agentId && Array.isArray(r.findings)) agentResults.push(r);
+      });
       var C = root.AstroClaims;
       var claims = C && C.buildClaimsFromEvidence ? C.buildClaimsFromEvidence(got.evidence, { query: args.query }) : [];
       var judged = C && C.judgeAll ? C.judgeAll(claims, { evidence: got.evidence }) : { claims: claims, verdicts: [] };
       var R = root.AstroReducer;
       var reduced = R && R.reduce ? R.reduce({
-        evidence: got.evidence, claims: judged.claims, stepResults: got.steps
+        evidence: got.evidence, claims: judged.claims, stepResults: got.steps,
+        agentResults: agentResults.length ? agentResults : undefined
       }) : null;
       var Report = root.AstroReport;
       var report = Report && Report.build ? Report.build({
