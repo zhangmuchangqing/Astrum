@@ -111,10 +111,23 @@ ok('样式同时定义 .step-panel 与 .exec-snapshot-panel',
   /\.step-panel,\s*\.exec-snapshot-panel\s*\{/.test(css), 'css');
 
 /* ---- 浏览器：当前源码 index.html ---- */
-var html = fs.readFileSync(TARGET.replace(/^file:\/\/\//, '').replace(/\//g, path.sep), 'utf8');
+/* file URL → 本地路径必须用标准 API：手写字符串替换会在 Linux 下丢掉根目录
+ * （file:///home/x 去掉前缀会变成 home/x），Windows 下又依赖盘符形态。
+ * 同时 fileURLToPath 会正确解码 %20 等 URL 编码字符。 */
+function toLocalPath(u) {
+  var s = String(u || '');
+  if (!/^file:\/\//i.test(s)) throw new Error('需要 file:// URL，收到: ' + s);
+  try {
+    return require('url').fileURLToPath(s);
+  } catch (e) {
+    throw new Error('非法 file URL: ' + s + ' (' + e.message + ')');
+  }
+}
+var LOCAL = toLocalPath(TARGET);
+var html = fs.readFileSync(LOCAL, 'utf8');
 var multi = /<script src=/.test(html);
 var tmp = multi
-  ? path.join(path.dirname(TARGET.replace(/^file:\/\/\//, '').replace(/\//g, path.sep)), '__exectest_tmp.html')
+  ? path.join(path.dirname(LOCAL), '__exectest_tmp.html')
   : path.join(require('os').tmpdir(), '__exectest_' + Date.now() + '.html');
 var idx = html.lastIndexOf('</body>');
 var patched = html.slice(0, idx) + ASSERT + html.slice(idx);
