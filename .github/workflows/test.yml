@@ -161,6 +161,18 @@ jobs:
       - name: V1.5 并发调度 v1-5-concurrency-test
         run: node tools/v1-5-concurrency-test.js
 
+      - name: V2 Agent 管道 p2-agent-pipeline-test
+        run: node tools/p2-agent-pipeline-test.js
+
+      - name: V2 Agent 边界 p2-agent-edge-test
+        run: node tools/p2-agent-edge-test.js
+
+      - name: V2 证据 Provider p2-evidence-provider-test
+        run: node tools/p2-evidence-provider-test.js
+
+      - name: V2 模型与快照契约 p2-llm-contract-test
+        run: node tools/p2-llm-contract-test.js
+
       - name: V1.5 TaskStore 压力 v1-5-store-stress-test
         run: node --expose-gc tools/v1-5-store-stress-test.js
 
@@ -289,6 +301,10 @@ jobs:
       # 设置面板的四层结构与页内索引（索引与分组必须一一对应）
       - name: 设置层级 settings-test
         run: node tools/settings-test.js
+
+      # V2 Runtime 开关优先级（默认 / URL / 设置 / URL 覆盖）
+      - name: V2 Runtime 开关 p2-runtime-e2e-test
+        run: node tools/p2-runtime-e2e-test.js
 
       # 上下文隔离：验证分片不会污染 ctx / CITIES，且 15 个 intent 全覆盖
       - name: 上下文隔离 ctx-isolation-test

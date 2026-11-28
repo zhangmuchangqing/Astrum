@@ -122,9 +122,12 @@ function main() {
     ok('文案给出可操作指引', /独立浏览器标签/.test(testLine));
 
     var eps = txt.split('\n').filter(function (l) { return l.indexOf('ENDP|') === 0; });
-    ok('检索端点也按 CSP 分类', eps.length > 0 &&
-      eps.every(function (l) { return /被当前页面的 CSP 拦截/.test(l); }),
-      eps.length + ' 个端点');
+    /* 明确标记为 unavailable 的 Provider（如未配置 ADS Token）不发起网络请求，
+     * 不适用 CSP 分类；其余可达性探测都必须归类为 CSP 拦截。 */
+    var networkEps = eps.filter(function (l) { return l.indexOf('|unavailable|') < 0 && !/未配置/.test(l); });
+    ok('检索端点也按 CSP 分类', networkEps.length > 0 &&
+      networkEps.every(function (l) { return /被当前页面的 CSP 拦截/.test(l); }),
+      networkEps.length + '/' + eps.length + ' 个端点');
 
     return new Promise(function (r) { blocked.srv.close(); r(); });
   }).then(function () {
