@@ -41,10 +41,6 @@
   var KEY = window.Profile ? Profile.ns('astrum.v2') : 'astrum.v2';
   /* 诊断信息只在 ?debug=1 时出现：普通用户不该看到错误栈与耗时 */
   var DEBUG = /[?&]debug=1\b/.test(location.search);
-  /* 显式 URL 开关：?agentRuntime=1 才启用 Agent 执行链；默认关闭，刷新即失效。 */
-  if (/[?&]agentRuntime=1\b/.test(location.search)) {
-    window.ASTRUM_AGENT_RUNTIME = true;
-  }
   /* 运行时自检的最近一次证据源体检结果（仅内存，不持久化） */
   var LAST_DIAG = null;
 
@@ -110,7 +106,9 @@
     register: 'auto', depth: 'standard', skymap: 'labeled', precision: 'visual',
     showTrace: true, showConfidence: true, showJD: true, autoScroll: true,
     compact: false, largeText: false, city: '北京', gear: 'binocular',
-    place: null, showObs: true, sidebarCollapsed: false, layers: null
+    place: null, showObs: true, sidebarCollapsed: false, layers: null,
+    /* F1：Agent 执行链的持久化开关。默认关闭；URL 参数仅作为本次会话的覆盖。 */
+    agentRuntime: false
   };
 
   var store = load();
@@ -128,6 +126,25 @@
     attachments: [],  /* 待发送的附件：{id,name,sizeText,kind,status,text,thumb,fits} */
     memory: []   /* 跨轮记忆：{q, a, target, at} */
   };
+
+  /* F1：Agent 执行链开关。优先级：URL 参数 > 设置 > 默认关闭。
+   * 只改 effective 全局标志，不把 URL 参数写回设置。 */
+  function urlRuntimeOverride() {
+    var m = location.search.match(/[?&]agentRuntime=(0|1)\b/);
+    return m ? m[1] === '1' : null;
+  }
+  function agentRuntimeOn() {
+    var u = urlRuntimeOverride();
+    if (u !== null) return u;
+    return state.settings.agentRuntime === true;
+  }
+  function applyRuntime() {
+    var u = urlRuntimeOverride();
+    window.ASTRUM_AGENT_RUNTIME = agentRuntimeOn();
+    window.ASTRUM_AGENT_RUNTIME_SOURCE = u !== null ? 'url' : (state.settings.agentRuntime ? 'settings' : 'default');
+    return window.ASTRUM_AGENT_RUNTIME;
+  }
+  applyRuntime();
 
   function mergeCfg(saved) {
     var d = AC.defaultConfig();
@@ -2318,8 +2335,77 @@
     return box;
   }
 
-  /* 答案核验提示：数值/引用审计属于可靠性说明，放在科研详情，
-   * 不再拼接到模型正文末尾。 */
+  /* G1：执行快照详情（路由 / 规划 / 运行时 / 模型）。
+   * 只展示 meta.execution 中的真实字段，不补造任何步骤或状态。 */
+  var OVERALL_LABEL = {
+    completed: '完成', partial: '部分完成', failed: '失败',
+    no_execution: '未执行', unknown: '未知'
+  };
+  function execSnapshotPanel(exec) {
+    if (!exec) return null;
+    var box = el('details', 'step-panel');
+    box.open = false;
+    var ov = exec.overallStatus || 'unknown';
+    box.appendChild(el('summary', 'step-summary',
+      L('执行记录') + ' · ' + L(OVERALL_LABEL[ov] || ov) + (exec.schemaVersion ? ' · v' + exec.schemaVersion : '')));
+    function row(k, v) {
+      if (v == null || v === '') return;
+      var r = el('div', 'step-row');
+      r.appendChild(el('span', 'step-tool', esc(L(k))));
+      r.appendChild(el('span', 'step-state', esc(String(v))));
+      box.appendChild(r);
+    }
+    var rt = exec.routing || {};
+    if (rt.mode || rt.intent) {
+      /* reason 可能是中文诊断串，留在诊断导出里，不直接进界面。 */
+      row('路由', [rt.mode, rt.intent,
+        rt.level || (rt.complexity != null ? 'L' + rt.complexity : null),
+        rt.legacy ? 'legacy' : null].filter(Boolean).join(' · '));
+    }
+    var pl = exec.planner;
+    row('规划', pl
+      ? (pl.template || '—') + ' · ' + pl.steps + ' 步 · ' + L(pl.agentRuntime ? 'Agent 模式' : '普通模式')
+      : L('未进入编排'));
+    row('运行时', L(exec.runtimeEnabled ? '已开启' : '未开启'));
+    var le = exec.llmExecution;
+    if (le) {
+      row('模型', [le.provider, le.model, le.requestStatus, le.responseStatus,
+        le.errorCode].filter(Boolean).join(' · '));
+    } else {
+      row('模型', L('未调用'));
+    }
+    if (!(exec.steps || []).length) {
+      row('说明', exec.mode === 'legacy' ? L('legacy 路径，无执行步骤') : L('本次没有可执行步骤'));
+    }
+    return box;
+  }
+
+  /* G2：空答案说明按真实执行状态分支，避免所有失败都显示同一句话。 */
+  function emptyAnswerText(ans) {
+    var exec = ans && ans.meta && ans.meta.execution;
+    if (!exec) return L('本次未生成可用表述。可换个更具体的问法，或在设置中检查模型与证据源状态。');
+    if (exec.mode === 'legacy') {
+      return L('本次未进入研究编排（legacy 路径），因此没有执行记录。可在设置 → 运行时自检中查看原因。');
+    }
+    var steps = exec.steps || [];
+    var failed = steps.filter(function (s) { return s.status === 'failed'; });
+    var llm = exec.llmExecution;
+    if (!steps.length) return L('本次没有可执行步骤，未生成结论。可在设置 → 运行时自检中检查配置。');
+    if (failed.length) {
+      var first = failed[0];
+      return T('执行了 {0} 个步骤，其中 {1} 个失败（{2}：{3}），未生成结论。',
+        steps.length, failed.length, first.tool || first.id || 'step',
+        (first.error && first.error.message) || '未知错误');
+    }
+    if (llm && llm.responseStatus === 'empty') {
+      return L('证据链已就绪，但模型返回空内容，未生成表述。可在设置中重新体检模型。');
+    }
+    if (llm && (llm.responseStatus === 'error' || llm.responseStatus === 'exception')) {
+      return T('模型调用失败（{0}），未生成表述。研究结论仍按证据链保留。', llm.errorCode || 'error');
+    }
+    return T('本次未生成可用表述（执行状态：{0}）。可换个更具体的问法，或在设置中检查模型与证据源状态。',
+      L(OVERALL_LABEL[exec.overallStatus] || exec.overallStatus || 'unknown'));
+  }
   function answerNotesNode(ans) {
     var notes = ans && ans.meta && Array.isArray(ans.meta.answerNotes) ? ans.meta.answerNotes : [];
     if (!notes.length) return null;
@@ -2418,7 +2504,7 @@
     if (main.children.length) card.appendChild(main);
     /* 空答案兜底：无正文、无详情、无核验时给出明确说明，避免渲染成空白气泡。 */
     else if (!detailSecs.length && !verifyList.length) {
-      card.appendChild(el('p', 'narr-body', esc('本次未生成可用表述。可换个更具体的问法，或在设置中检查模型与证据源状态。')));
+      card.appendChild(el('p', 'narr-body', esc(emptyAnswerText(ans))));
     }
     if (verifyList.length) {
       var vstrip = renderVerifyStrip(verifyList);
@@ -2444,6 +2530,15 @@
       var ap = agentPanel(extra.state || {}, ans);
       if (ap) card.appendChild(ap);
     }
+    /* E2：旧版本答案没有执行快照时，明确标注「记录缺失」，
+     * 不能让人误读为「本轮没有执行」。 */
+    if (!execSnap && (ans.research || (ans.meta && ans.meta.tier === 'unknown'))) {
+      var leg = el('div', 'recall');
+      leg.textContent = L('此条回答生成于旧版本，未包含执行记录（无法区分「未执行」与「记录缺失」）。');
+      card.appendChild(leg);
+    }
+    var execMetaNode = execSnapshotPanel(execSnap);
+    if (execMetaNode) card.appendChild(execMetaNode);
     if (ans.meta && ans.meta.styleSwitch) {
       var sw = el('div', 'recall');
       sw.innerHTML = '<span class="ic">↳</span>这题按「' + esc(ans.meta.styleSwitch.label) + '」风格回答（你的默认是「' + esc(PERSONAS[ans.meta.styleSwitch.from] ? PERSONAS[ans.meta.styleSwitch.from].label : '未设置') + '」）';
@@ -3235,6 +3330,10 @@
     }
 
     function failNote(m) {
+      /* D3：模型「成功返回但文本为空」必须单独说明，不能显示成未知失败。 */
+      if (m && m.ok && !(m && m.text)) {
+        return L('模型返回空内容：未生成可用表述。研究结论仍按证据链保留，未用模型输出替代。');
+      }
       var msg = T('云端表述失败（{0}）：{1}。研究结论仍按证据链保留，未用模型输出替代。',
         (m && m.code) || 'unknown', (m && m.reason) || '未知原因');
       if (m && m.code === 'rate_limit' && m.retryAfter) {
@@ -4085,22 +4184,51 @@
 
       function finish() {
         think.remove(); busy(false);
-        /* 把执行记录快照写进答案：刷新/恢复后仍能看到步骤与 Agent 结果，
-         * 且与 meta.taskId 对应，便于排查「为什么没有产出」。 */
-        if (ctrlState) {
-          r.answer.meta = r.answer.meta || {};
-          r.answer.meta.execution = {
-            taskId: ctrlState.id || null,
-            verdict: r.verdict || null,
-            steps: (ctrlState.steps || []).map(function (s) {
-              return {
-                id: s.id, tool: s.tool, kind: s.kind || null, status: s.status,
-                error: s.error || null, durationMs: s.durationMs || null
-              };
-            }),
-            agentResults: ctrlState.agentResults || []
+        /* E1：统一执行快照。刷新/恢复后仍能看到步骤、Agent 结果与模型状态，
+         * 且 schemaVersion 便于后续兼容；旧字段 taskId/verdict/steps 保留。 */
+        var rtOn = !!(window.ASTRUM_AGENT_RUNTIME);
+        r.answer.meta = r.answer.meta || {};
+        var stepsSnap = ((ctrlState && ctrlState.steps) || []).map(function (s) {
+          return {
+            id: s.id, tool: s.tool, kind: s.kind || null, status: s.status,
+            error: s.error || null, durationMs: s.durationMs || null
           };
+        });
+        var failedSteps = stepsSnap.filter(function (s) { return s.status === 'failed'; }).length;
+        var verdictRaw = String(r.verdict || '').toUpperCase();
+        var overall = 'no_execution';
+        if (stepsSnap.length) {
+          if (failedSteps && failedSteps === stepsSnap.length) overall = 'failed';
+          else if (failedSteps || verdictRaw === 'PARTIAL') overall = 'partial';
+          else overall = 'completed';
         }
+        var ctrlPlan = r.control && r.control.plan;
+        r.answer.meta.execution = {
+          schemaVersion: 2,
+          executionId: (ctrlState && ctrlState.id) ? ('exec-' + ctrlState.id) : null,
+          taskId: (ctrlState && ctrlState.id) || null,
+          verdict: r.verdict || null,
+          mode: rtOn ? 'agent' : 'control',
+          runtimeEnabled: rtOn,
+          routing: {
+            intent: info && info.intent || null,
+            mode: info && info.route && info.route.mode || null,
+            complexity: info && info.route && info.route.complexity || null,
+            level: info && info.route && info.route.level || null,
+            legacy: !!(info && info.route && info.route.legacy),
+            reason: info && info.route && info.route.reason || null
+          },
+          planner: ctrlPlan ? {
+            template: ctrlPlan.template || null,
+            steps: (ctrlPlan.steps || []).length,
+            agentRuntime: rtOn
+          } : null,
+          steps: stepsSnap,
+          agentResults: (ctrlState && ctrlState.agentResults) || [],
+          llmExecution: r.answer.meta.llmExecution || null,
+          overallStatus: overall
+        };
+        window.ASTRUM_LAST_EXECUTION = r.answer.meta.execution;
         renderAnswer(r.answer, {
           control: true, verdict: r.verdict,
           state: ctrlState
@@ -4124,12 +4252,34 @@
         r.answer.meta = r.answer.meta || {};
         r.answer.meta.promptEvidence = brief.evidence;
       }
-      /* 与旧契约一致：没有任何可核实事实/证据时不外发模型。 */
-      if (!pay.facts.length && !ev.length) { syncSources({ code: 'not-used', ok: false }); finish(); return; }
+      /* D1：证据为空不再一律跳过模型，按任务类型分流：
+       * - 严格文献任务（要求论文/引用/来源/证据）无证据 → 明确拒绝，禁止编造引用；
+       * - 普通解释类问题 → 允许模型给通用解释，但必须强标注「未完成文献检索」。 */
+      var noEvidence = !pay.facts.length && !ev.length;
+      var strictEvidence = /论文|文献|引用|参考文献|出处|证据|DOI|期刊|同行评审/.test(qForAns);
+      if (noEvidence && strictEvidence) {
+        r.answer.sections = Array.isArray(r.answer.sections) ? r.answer.sections : [];
+        r.answer.sections.push({
+          kind: 'boundary', mode: 'uncertain',
+          text: L('本次未完成文献检索（未获得可核验证据），无法给出带文献依据的结论。可稍后重试，或在设置中检查证据源。')
+        });
+        r.answer.meta = r.answer.meta || {};
+        r.answer.meta.llmExecution = {
+          schemaVersion: 1, provider: src.id, model: src.model || src.name,
+          questionMode: 'E', requestStatus: 'skipped', responseStatus: 'not_requested',
+          startedAt: null, completedAt: new Date().toISOString(), latencyMs: 0,
+          finishReason: 'insufficient_evidence', errorCode: 'evidence_required',
+          tokenUsage: null, outputValidation: { ok: false, chars: 0 },
+          evidenceCount: 0, factsCount: 0
+        };
+        syncSources({ code: 'not-used', ok: false });
+        finish();
+        return;
+      }
       var ctxLine2 = ctx.city + ' · ' + ctx.y + '-' + pad(ctx.mo) + '-' + pad(ctx.d) + ' ' +
         pad(ctx.h) + ':' + pad(ctx.mi);
-      var answerMode = window.AstroAnswerComposer
-        ? window.AstroAnswerComposer.modeFor(r.answer, { question: qForAns }) : '';
+      var answerMode = noEvidence ? 'C' : (window.AstroAnswerComposer
+        ? window.AstroAnswerComposer.modeFor(r.answer, { question: qForAns }) : '');
       streamAnswer({
         answer: r.answer, src: src, question: qForAns, think: think, signal: ac.signal,
         payload: {
@@ -4139,10 +4289,12 @@
           images: src.vision ? A_ATT.imagesForPrompt(atts || []) : [],
           tone: state.settings.register === 'pro' ? 'academic' : 'warm', context: ctxLine2,
           memory: memoryForPrompt(), answerMode: answerMode,
+          noEvidence: noEvidence,
           maxChars: answerMode === 'E' ? 900 : answerMode === 'D' ? 700
             : answerMode === 'C' ? 600 : 360
         },
         onFinish: function (m) {
+          var text = (m && m.text) || '';
           r.answer.meta = r.answer.meta || {};
           r.answer.meta.cloudExpression = {
             sourceId: src.id, code: m && m.code || 'unknown',
@@ -4151,6 +4303,36 @@
             stream: !!(m && m.stream), fallback: !!(m && m.fallback),
             aborted: !!(m && m.aborted), usage: m && m.usage || null
           };
+          /* D2：统一模型执行快照。responseStatus 必须区分「空文本」与「成功」，
+           * 不允许把空返回当成可用表述。 */
+          var resp = !m ? 'error' : m.aborted ? 'aborted'
+            : text ? 'ok'
+              : (m.code === 'empty' ? 'empty' : (m.code === 'timeout' ? 'timeout' : (m.ok ? 'empty' : 'error')));
+          var u = (m && m.usage) || null;
+          var tu = u ? {
+            prompt: u.prompt_tokens != null ? u.prompt_tokens : (u.prompt != null ? u.prompt : null),
+            completion: u.completion_tokens != null ? u.completion_tokens : (u.completion != null ? u.completion : null),
+            total: u.total_tokens != null ? u.total_tokens : (u.total != null ? u.total : null)
+          } : null;
+          r.answer.meta.llmExecution = {
+            schemaVersion: 1, provider: src.id, model: src.model || src.name,
+            questionMode: answerMode, requestStatus: 'sent', responseStatus: resp,
+            startedAt: new Date(Date.now() - ((m && m.latency) || 0)).toISOString(),
+            completedAt: new Date().toISOString(),
+            latencyMs: (m && m.latency) || 0,
+            finishReason: (m && m.finishReason) || null,
+            tokenUsage: tu,
+            outputValidation: { ok: !!text, chars: text.length },
+            errorCode: text ? null : ((m && m.code) || 'empty'),
+            evidenceCount: ev.length, factsCount: pay.facts.length
+          };
+          /* D1：无证据的通用解释必须显式标注，不能冒充研究结论。 */
+          if (noEvidence && text) {
+            r.answer.sections.push({
+              kind: 'boundary', mode: 'uncertain',
+              text: L('本次未完成文献检索（未获得可核验证据）；以下为基于通用知识的解释，不作为研究结论。')
+            });
+          }
           syncSources({ code: m && m.code || 'unknown', ok: !!(m && m.text) && !(m && m.aborted) });
           finish();
         }
@@ -4159,6 +4341,15 @@
         r.answer.meta.cloudExpression = {
           sourceId: src.id, code: 'exception',
           reason: String(e && e.message || e).slice(0, 120)
+        };
+        r.answer.meta.llmExecution = {
+          schemaVersion: 1, provider: src.id, model: src.model || src.name,
+          questionMode: answerMode, requestStatus: 'sent', responseStatus: 'exception',
+          startedAt: null, completedAt: new Date().toISOString(), latencyMs: 0,
+          finishReason: null, tokenUsage: null,
+          outputValidation: { ok: false, chars: 0 },
+          errorCode: 'exception', errorMessage: String(e && e.message || e).slice(0, 160),
+          evidenceCount: ev.length, factsCount: pay.facts.length
         };
         syncSources({ code: 'exception', ok: false });
         finish();
@@ -4258,6 +4449,24 @@
         }
         ans = AC.buildAnswer(qForAns, ctx, cfgRun);
         if (styleSwitch) ans.meta.styleSwitch = styleSwitch;
+        /* E1：legacy 回答也写统一快照，明确「未进入编排」而不是留空。 */
+        ans.meta = ans.meta || {};
+        ans.meta.execution = {
+          schemaVersion: 2, executionId: null, taskId: null,
+          verdict: 'LEGACY', mode: 'legacy',
+          runtimeEnabled: !!(window.ASTRUM_AGENT_RUNTIME),
+          routing: {
+            intent: ans.intent || null,
+            mode: (routeInfo && routeInfo.route && routeInfo.route.mode) || null,
+            complexity: (routeInfo && routeInfo.route && routeInfo.route.complexity) || null,
+            level: (routeInfo && routeInfo.route && routeInfo.route.level) || null,
+            legacy: true,
+            reason: (routeInfo && routeInfo.route && routeInfo.route.reason) || 'legacy_fallback'
+          },
+          planner: null, steps: [], agentResults: [],
+          llmExecution: null, overallStatus: 'no_execution'
+        };
+        window.ASTRUM_LAST_EXECUTION = ans.meta.execution;
         bumpStat('ask', ans.intent);
         /* 承接历史：同意图同目标问过，就把上次结论挂上供渲染层提示（不作为依据） */
         var prevSkill = skillFor(ans.intent, (ans.meta && ans.meta.target) || '');
@@ -6162,8 +6371,17 @@
       rtEx = (window.AstroAgentExecutor && typeof window.AstroAgentExecutor.available === 'function')
         ? window.AstroAgentExecutor.available() : null;
     } catch (e) { rtEx = null; }
-    var rtOn = window.ASTRUM_AGENT_RUNTIME === true;
-    rt.appendChild(rtRow('Agent 运行时', L(rtOn ? '已开启' : '未开启（地址加 ?agentRuntime=1 生效）'), rtOn));
+    var rtOn = agentRuntimeOn();
+    var rtSrcLabel = window.ASTRUM_AGENT_RUNTIME_SOURCE === 'url' ? L(' · 由地址参数强制')
+      : window.ASTRUM_AGENT_RUNTIME_SOURCE === 'settings' ? L(' · 来自设置') : '';
+    rt.appendChild(rtRow('Agent 运行时', L(rtOn ? '已开启' : '未开启') + rtSrcLabel, rtOn));
+    rt.appendChild(switchRow('Agent 执行链', '持久化开关；地址参数 ?agentRuntime=0/1 优先',
+      state.settings.agentRuntime === true, function (v) {
+        state.settings.agentRuntime = v;
+        persist();
+        applyRuntime();
+        renderSettings();
+      }));
     rt.appendChild(rtRow('云模型', L(rtStatus.msg || '未配置') + ' · ' + (rtConf.model || '—'), rtStatus.state === 'ready'));
     rt.appendChild(rtRow('Agent 可用来源', rtEx || L('无可用云端来源'), !!rtEx));
     var diagBox = el('div', 'note-box',
@@ -6191,7 +6409,9 @@
         toast(T('体检失败：{0}', (e && e.message) || L('网络错误')));
       });
     });
-    rtAct.appendChild(btnM); rtAct.appendChild(btnE);
+    var btnD = el('button', 'btn-ghost', L('导出诊断信息'));
+    btnD.addEventListener('click', function () { exportDiagnostics(); });
+    rtAct.appendChild(btnM); rtAct.appendChild(btnE); rtAct.appendChild(btnD);
     rt.appendChild(rtAct);
     pushSection(L('运行时自检'), rt);
     }
@@ -6451,6 +6671,49 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
     toast('已导出配置（不含密钥）');
   }
+  /* G3：诊断导出。字段白名单 + 密钥字段检测，绝不导出密钥。
+   * 只取本机状态与最近一次执行快照，不上传、不包含对话正文。 */
+  function exportDiagnostics() {
+    var sid = state.settings.sourceId;
+    var st = (S && S.statusOf ? S.statusOf(sid) : null) || {};
+    var conf = (S && S.conf ? S.conf(sid) : null) || {};
+    var srcDef = sourceById(sid) || {};
+    var data = {
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      app: {
+        origin: location.origin + location.pathname,
+        language: document.documentElement.lang || null
+      },
+      runtime: {
+        enabled: agentRuntimeOn(),
+        source: window.ASTRUM_AGENT_RUNTIME_SOURCE || 'unknown'
+      },
+      source: {
+        id: sid, type: srcDef.type || null, model: conf.model || null,
+        status: st.state || null, msg: st.msg || null
+      },
+      providers: LAST_DIAG || null,
+      lastExecution: window.ASTRUM_LAST_EXECUTION || null,
+      env: {
+        ua: navigator.userAgent, language: navigator.language,
+        timezone: (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || null
+      }
+    };
+    var text = JSON.stringify(data, null, 2);
+    if (/"(key|apiKey|api_key|token|authorization|secret|password)"\s*:/i.test(text)) {
+      toast(L('诊断信息包含疑似密钥字段，已中止导出'));
+      return;
+    }
+    var blob = new Blob([text], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'astrum-diagnostics-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+    toast(L('已导出诊断信息（不含密钥）'));
+  }
+
   function importAll(f) {
     var rd = new FileReader();
     rd.onload = function () {
@@ -6459,7 +6722,7 @@
         if (d.settings) state.settings = Object.assign({}, DEFAULTS, d.settings);
         if (Array.isArray(d.custom)) state.custom = d.custom;
         if (d.cfg) cfg = mergeCfg(d.cfg);
-        applySettings(); renderAgents(); renderSettings(); refreshPanels();
+        applySettings(); applyRuntime(); renderAgents(); renderSettings(); refreshPanels();
         toast('配置已导入');
       } catch (e) { toast('配置文件无法解析：{0}', e.message); }
     };
